@@ -463,8 +463,11 @@ nav ul ul li a:hover {
 .rankings-section {
     padding: 60px;
     border-radius: 5px;
-    background-color: #f9f9f9;
-    margin-bottom: 100px;
+    background-color: #f0f0f0; /* Lighter background for better contrast */
+    margin-bottom: 50px; /* Reduce margin for a tighter look */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a subtle shadow for depth */
+    margin-bottom:150px;
+    margin-top:100px;
 }
 
 .rankings-header {
@@ -476,26 +479,30 @@ nav ul ul li a:hover {
 
 .rankings-header h2 {
     margin: 0;
-    color: #4B0000;
+    color: #4B0000; /* Ashesi Sports Insight primary color */
+    font-size: 2rem; /* Increase font size for better visibility */
 }
 
 .rankings-container {
     display: flex;
     justify-content: space-between;
     gap: 20px;
+    flex-wrap: wrap; /* Allow items to wrap for better responsiveness */
 }
 
 .rankings-container .rankings {
     flex: 1;
-    background-color: white;
+    background: linear-gradient(135deg, #4B0000, #388E3C); /* Original gradient with Ashesi maroon */
     border-radius: 5px;
     padding: 20px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Consistent shadow with other elements */
+    color: white; /* White text for good contrast */
 }
 
 .rankings h3 {
-    color: #4B0000;
+    color: white;
     margin-bottom: 10px;
+    font-size: 1.5rem; /* Increase font size */
 }
 
 .rankings ul {
@@ -507,20 +514,21 @@ nav ul ul li a:hover {
 .rankings ul li {
     display: flex;
     justify-content: space-between;
-    align-items: center; /* Center align the content */
+    align-items: center;
     padding: 10px 0;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3); /* Lighter line for better visibility */
 }
 
 .rankings ul li span {
-    color: #666;
+    color: #f0f0f0; /* Lighten text color for contrast */
 }
 
 .rankings ul li img {
-    width: 30px; /* Adjust size as needed */
+    width: 40px; /* Slightly increase image size */
     height: auto;
     margin-right: 10px;
 }
+
 
 footer {
     background-color: #4B0000;

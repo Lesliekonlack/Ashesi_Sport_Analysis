@@ -339,7 +339,7 @@ if ($playerId && isset($players[$playerId])) {
             <li><a href="#stats">Stats</a></li>
             <li><a href="#teams">Teams</a></li>
             <li><a href="#coaches">Coaches</a></li>
-            <li><a href="#clubs">Clubs</a></li>
+            <li><a href="club.php">Clubs</a></li>
             <li><a href="#players">Players</a></li>
             <li><a href="#competitions">Competitions</a></li>
         </ul>
