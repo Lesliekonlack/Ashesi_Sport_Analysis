@@ -6,6 +6,7 @@
     <title>Club Details - Ashesi Sports Insight</title>
     <link rel="stylesheet" href="styles.css">
     <style>
+        /* Basic CSS for styling */
         body {
             margin: 0;
             font-family: Arial, sans-serif;
@@ -491,98 +492,98 @@
                 </div>
 
                 <!-- Inner Circle (Set 1) -->
-                <div class="orbiting-element set1" data-player-name="Player 1" data-player-position="Forward" data-player-description="Player 1's description" style="--i: 0;">
+                <div class="orbiting-element set1" data-player-id="player1" data-player-name="Player 1" data-player-position="Forward" data-player-description="Player 1's description" style="--i: 0;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 1">
                     <p class="bottom">Player 1<br>Forward</p>
                 </div>
-                <div class="orbiting-element set1" data-player-name="Player 2" data-player-position="Midfielder" data-player-description="Player 2's description" style="--i: 1;">
+                <div class="orbiting-element set1" data-player-id="player2" data-player-name="Player 2" data-player-position="Midfielder" data-player-description="Player 2's description" style="--i: 1;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 2">
                     <p class="bottom">Player 2<br>Midfielder</p>
                 </div>
-                <div class="orbiting-element set1" data-player-name="Player 3" data-player-position="Defender" data-player-description="Player 3's description" style="--i: 2;">
+                <div class="orbiting-element set1" data-player-id="player3" data-player-name="Player 3" data-player-position="Defender" data-player-description="Player 3's description" style="--i: 2;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 3">
                     <p class="bottom">Player 3<br>Defender</p>
                 </div>
-                <div class="orbiting-element set1 player4" data-player-name="Player 4" data-player-position="Goalkeeper" data-player-description="Player 4's description" style="--i: 3;">
+                <div class="orbiting-element set1 player4" data-player-id="player4" data-player-name="Player 4" data-player-position="Goalkeeper" data-player-description="Player 4's description" style="--i: 3;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 4">
                     <p class="top">Player 4<br>Goalkeeper</p>
                 </div>
 
                 <!-- Outer Circle -->
-                <div class="orbiting-element set1 outer" data-player-name="Player 5" data-player-position="Forward" data-player-description="Player 5's description" style="--i: 4;">
+                <div class="orbiting-element set1 outer" data-player-id="player5" data-player-name="Player 5" data-player-position="Forward" data-player-description="Player 5's description" style="--i: 4;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 5">
                     <p class="bottom">Player 5<br>Forward</p>
                 </div>
-                <div class="orbiting-element set1 outer" data-player-name="Player 6" data-player-position="Forward" data-player-description="Player 6's description" style="--i: 0;">
+                <div class="orbiting-element set1 outer" data-player-id="player6" data-player-name="Player 6" data-player-position="Forward" data-player-description="Player 6's description" style="--i: 0;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 6">
                     <p class="bottom">Player 6<br>Forward</p>
                 </div>
-                <div class="orbiting-element set1 outer player7" data-player-name="Player 7" data-player-position="Midfielder" data-player-description="Player 7's description" style="--i: 1;">
+                <div class="orbiting-element set1 outer player7" data-player-id="player7" data-player-name="Player 7" data-player-position="Midfielder" data-player-description="Player 7's description" style="--i: 1;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 7">
                     <p class="top">Player 7<br>Midfielder</p>
                 </div>
-                <div class="orbiting-element set1 outer" data-player-name="Player 8" data-player-position="Defender" data-player-description="Player 8's description" style="--i: 2;">
+                <div class="orbiting-element set1 outer" data-player-id="player8" data-player-name="Player 8" data-player-position="Defender" data-player-description="Player 8's description" style="--i: 2;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 8">
                     <p class="bottom">Player 8<br>Defender</p>
                 </div>
-                <div class="orbiting-element set1 outer" data-player-name="Player 9" data-player-position="Goalkeeper" data-player-description="Player 9's description" style="--i: 3;">
+                <div class="orbiting-element set1 outer" data-player-id="player9" data-player-name="Player 9" data-player-position="Goalkeeper" data-player-description="Player 9's description" style="--i: 3;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 9">
                     <p class="bottom">Player 9<br>Goalkeeper</p>
                 </div>
-                <div class="orbiting-element set1 outer" data-player-name="Player 10" data-player-position="Forward" data-player-description="Player 10's description" style="--i: 4;">
+                <div class="orbiting-element set1 outer" data-player-id="player10" data-player-name="Player 10" data-player-position="Forward" data-player-description="Player 10's description" style="--i: 4;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 10">
                     <p class="bottom">Player 10<br>Forward</p>
                 </div>
-                <div class="orbiting-element set1 outer" data-player-name="Player 11" data-player-position="Midfielder" data-player-description="Player 11's description" style="--i: 5;">
+                <div class="orbiting-element set1 outer" data-player-id="player11" data-player-name="Player 11" data-player-position="Midfielder" data-player-description="Player 11's description" style="--i: 5;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 11">
                     <p class="bottom">Player 11<br>Midfielder</p>
                 </div>
 
                 <!-- Second set of orbiting elements (hidden initially) -->
                 <!-- Inner Circle -->
-                <div class="orbiting-element set2" data-player-name="Player 12" data-player-position="Forward" data-player-description="Player 12's description" style="--i: 0;">
+                <div class="orbiting-element set2" data-player-id="player12" data-player-name="Player 12" data-player-position="Forward" data-player-description="Player 12's description" style="--i: 0;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 12">
                     <p class="bottom">Player 12<br>Forward</p>
                 </div>
-                <div class="orbiting-element set2" data-player-name="Player 13" data-player-position="Midfielder" data-player-description="Player 13's description" style="--i: 1;">
+                <div class="orbiting-element set2" data-player-id="player13" data-player-name="Player 13" data-player-position="Midfielder" data-player-description="Player 13's description" style="--i: 1;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 13">
                     <p class="bottom">Player 13<br>Midfielder</p>
                 </div>
-                <div class="orbiting-element set2" data-player-name="Player 14" data-player-position="Defender" data-player-description="Player 14's description" style="--i: 2;">
+                <div class="orbiting-element set2" data-player-id="player14" data-player-name="Player 14" data-player-position="Defender" data-player-description="Player 14's description" style="--i: 2;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 14">
                     <p class="bottom">Player 14<br>Defender</p>
                 </div>
-                <div class="orbiting-element set2 player15" data-player-name="Player 15" data-player-position="Goalkeeper" data-player-description="Player 15's description" style="--i: 3;">
+                <div class="orbiting-element set2 player15" data-player-id="player15" data-player-name="Player 15" data-player-position="Goalkeeper" data-player-description="Player 15's description" style="--i: 3;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 15">
                     <p class="top">Player 15<br>Goalkeeper</p>
                 </div>
 
                 <!-- Outer Circle -->
-                <div class="orbiting-element set2 outer" data-player-name="Player 16" data-player-position="Forward" data-player-description="Player 16's description" style="--i: 4;">
+                <div class="orbiting-element set2 outer" data-player-id="player16" data-player-name="Player 16" data-player-position="Forward" data-player-description="Player 16's description" style="--i: 4;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 16">
                     <p class="bottom">Player 16<br>Forward</p>
                 </div>
-                <div class="orbiting-element set2 outer" data-player-name="Player 17" data-player-position="Forward" data-player-description="Player 17's description" style="--i: 0;">
+                <div class="orbiting-element set2 outer" data-player-id="player17" data-player-name="Player 17" data-player-position="Forward" data-player-description="Player 17's description" style="--i: 0;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 17">
                     <p class="bottom">Player 17<br>Forward</p>
                 </div>
-                <div class="orbiting-element set2 outer player18" data-player-name="Player 18" data-player-position="Midfielder" data-player-description="Player 18's description" style="--i: 1;">
+                <div class="orbiting-element set2 outer player18" data-player-id="player18" data-player-name="Player 18" data-player-position="Midfielder" data-player-description="Player 18's description" style="--i: 1;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 18">
                     <p class="top">Player 18<br>Midfielder</p>
                 </div>
-                <div class="orbiting-element set2 outer" data-player-name="Player 19" data-player-position="Defender" data-player-description="Player 19's description" style="--i: 2;">
+                <div class="orbiting-element set2 outer" data-player-id="player19" data-player-name="Player 19" data-player-position="Defender" data-player-description="Player 19's description" style="--i: 2;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 19">
                     <p class="bottom">Player 19<br>Defender</p>
                 </div>
-                <div class="orbiting-element set2 outer" data-player-name="Player 20" data-player-position="Goalkeeper" data-player-description="Player 20's description" style="--i: 3;">
+                <div class="orbiting-element set2 outer" data-player-id="player20" data-player-name="Player 20" data-player-position="Goalkeeper" data-player-description="Player 20's description" style="--i: 3;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 20">
                     <p class="bottom">Player 20<br>Goalkeeper</p>
                 </div>
-                <div class="orbiting-element set2 outer" data-player-name="Player 21" data-player-position="Forward" data-player-description="Player 21's description" style="--i: 4;">
+                <div class="orbiting-element set2 outer" data-player-id="player21" data-player-name="Player 21" data-player-position="Forward" data-player-description="Player 21's description" style="--i: 4;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 21">
                     <p class="bottom">Player 21<br>Forward</p>
                 </div>
-                <div class="orbiting-element set2 outer" data-player-name="Player 22" data-player-position="Midfielder" data-player-description="Player 22's description" style="--i: 5;">
+                <div class="orbiting-element set2 outer" data-player-id="player22" data-player-name="Player 22" data-player-position="Midfielder" data-player-description="Player 22's description" style="--i: 5;">
                     <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 22">
                     <p class="bottom">Player 22<br>Midfielder</p>
                 </div>
@@ -607,10 +608,11 @@
         <div class="modal-content">
             <span class="close">&times;</span>
             <div class="player-info">
+                <img id="modalPlayerImage" src="" alt="Player Image" style="width: 100%; max-width: 200px; margin-bottom: 15px; border-radius: 50%;">
                 <h2 id="modalPlayerName">Player Name</h2>
                 <p id="modalPlayerPosition">Position</p>
                 <p id="modalPlayerDescription">Detailed description of the player, stats, history, etc.</p>
-                <p class="see-more">See More</p>
+                <a id="modalSeeMore" class="see-more" href="#" target="_blank">See More</a>
             </div>
         </div>
     </div>
@@ -628,16 +630,28 @@
 
         function showNextSet() {
             if (showingSet1) {
-                set1.forEach(el => el.style.opacity = 0);
-                set2.forEach(el => el.style.opacity = 1);
+                set1.forEach(el => {
+                    el.style.opacity = 0;
+                    el.style.pointerEvents = 'none'; // Disable interactions for hidden set
+                });
+                set2.forEach(el => {
+                    el.style.opacity = 1;
+                    el.style.pointerEvents = 'auto'; // Enable interactions for visible set
+                });
                 showingSet1 = false;
             }
         }
 
         function showPreviousSet() {
             if (!showingSet1) {
-                set1.forEach(el => el.style.opacity = 1);
-                set2.forEach(el => el.style.opacity = 0);
+                set1.forEach(el => {
+                    el.style.opacity = 1;
+                    el.style.pointerEvents = 'auto';
+                });
+                set2.forEach(el => {
+                    el.style.opacity = 0;
+                    el.style.pointerEvents = 'none';
+                });
                 showingSet1 = true;
             }
         }
@@ -689,18 +703,26 @@
         });
 
         // Initialize the visibility of the elements
-        set1.forEach(el => el.style.opacity = 1);
-        set2.forEach(el => el.style.opacity = 0);
+        set1.forEach(el => {
+            el.style.opacity = 1;
+            el.style.pointerEvents = 'auto';
+        });
+        set2.forEach(el => {
+            el.style.opacity = 0;
+            el.style.pointerEvents = 'none';
+        });
 
         // Modal functionality
         const modal = document.getElementById("playerModal");
         const closeModal = document.querySelector(".modal .close");
 
         // Function to open modal with player info
-        function openModal(playerName, playerPosition, playerDescription) {
+        function openModal(playerName, playerPosition, playerDescription, playerImage, playerMoreLink) {
             document.getElementById("modalPlayerName").textContent = playerName;
             document.getElementById("modalPlayerPosition").textContent = playerPosition;
             document.getElementById("modalPlayerDescription").textContent = playerDescription;
+            document.getElementById("modalPlayerImage").src = playerImage;
+            document.getElementById("modalSeeMore").href = playerMoreLink;
             modal.style.display = "block";
         }
 
@@ -721,8 +743,15 @@
                 const playerName = player.getAttribute('data-player-name');
                 const playerPosition = player.getAttribute('data-player-position');
                 const playerDescription = player.getAttribute('data-player-description');
-                
-                openModal(playerName, playerPosition, playerDescription);
+                const playerImage = player.querySelector('img').src; // Assuming the image source is the same
+                const playerId = player.getAttribute('data-player-id'); // Unique identifier for the player
+
+                // Set the correct URL path for the "See More" link
+                const playerMoreLink = `http://localhost/Ashesi_Sport_Analysis/view/pages/seemore.php?player=${playerId}`;
+
+                if ((showingSet1 && player.classList.contains('set1')) || (!showingSet1 && player.classList.contains('set2'))) {
+                    openModal(playerName, playerPosition, playerDescription, playerImage, playerMoreLink);
+                }
             });
         });
     </script>
