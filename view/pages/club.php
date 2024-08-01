@@ -10,7 +10,7 @@
             margin: 0;
             font-family: Arial, sans-serif;
             background-color: white;
-            padding-top: 80px; /* Space for the fixed header */
+            padding-top: 30px;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
@@ -117,7 +117,44 @@
             cursor: pointer;
         }
 
+        .sidebar {
+            width: 200px;
+            background-color: #4B0000;
+            padding: 20px;
+            height: 100vh;
+            position: fixed;
+            top: 80px;
+            left: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar ul li {
+            margin-bottom: 15px;
+        }
+
+        .sidebar ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .sidebar ul li a:hover {
+            text-decoration: underline;
+        }
+
         .main-content {
+            margin-left: 270px;
             padding: 20px;
             flex: 1;
         }
@@ -130,12 +167,152 @@
             color: #4B0000;
             font-size: 2rem;
             margin-bottom: 20px;
+            text-align: center;
         }
 
-        .card-container {
+        .team-photo {
+            background-color: #4B0000;
+            background-image: url('https://www.transparenttextures.com/patterns/asfalt-dark.png'), linear-gradient(90deg, white 2px, transparent 2px), linear-gradient(white 2px, transparent 2px);
+            background-size: cover, 50px 50px, 50px 50px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            display: inline-block;
+            max-width: 58%;
+            margin-left: 260px;
+        }
+
+        .team-photo img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+
+        .animation-container {
+            position: relative;
+            width: 98%;
+            margin-left: -10px;
+            height: 145vh;
+            overflow: visible; /* Ensure content is not clipped */
             display: flex;
-            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            background-color: #88C057;
+            background-image: url('https://www.transparenttextures.com/patterns/asfalt-dark.png'), linear-gradient(90deg, white 2px, transparent 2px), linear-gradient(white 2px, transparent 2px);
+            background-size: cover, 50px 50px, 50px 50px;
+        }
+
+        .central-logo {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            z-index: 10;
+            text-align: center;
+            font-size: 1.5rem;
+            color: #4B0000;
+        }
+
+        .orbiting-element {
+            position: absolute;
+            width: 310px;
+            height: 280px;
+            overflow: visible; /* Ensure content is not clipped */
+            transform-origin: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .orbiting-element img {
+            width: 50%;
+            height: auto;
+            border-radius: 50%;
+            margin-bottom: 10px;
+            z-index: 2;
+            position: relative;
+        }
+
+        .orbiting-element p.bottom {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #4B0000;
+            text-align: center;
+            background-color: rgba(75, 5, 0, 0.3);
+            padding: 5px;
+            border-radius: 5px;
+            width: 50%;
+            position: absolute;
+            z-index: 1;
+        }
+
+        .orbiting-element p.top {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #4B0000;
+            text-align: center;
+            background-color: rgba(75, 5, 0, 0.3);
+            padding: 5px;
+            border-radius: 5px;
+            width: 50%;
+            position: absolute;
+            z-index: 1;
+        }
+
+        .orbiting-element p.bottom {
+            top: 68%;
+        }
+
+        .orbiting-element p.top {
+            top: -100px; /* Adjust this value to move the text further up */
+        }
+
+        .orbiting-element img:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(255, 255, 0, 0.6), 0 10px 20px rgba(255, 255, 255, 0.5);
+            filter: brightness(1.2);
+        }
+
+        .orbiting-element.player4 p.top,
+        .orbiting-element.player7 p.top,
+        .orbiting-element.player15 p.top,
+        .orbiting-element.player18 p.top {
+            top: -60px; /* Ensure the text is visible above the images */
+        }
+
+        .outer {
+            transform-origin: 500px center;
+        }
+
+        .arrow {
+            position: absolute;
+            top: 50%;
+            z-index: 100;
+            cursor: pointer;
+            font-size: 2rem;
+            color: white;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+        }
+
+        .arrow.left {
+            left: 10px;
+        }
+
+        .arrow.right {
+            right: 10px;
+        }
+
+        .card-container1 {
+            display: flex;
+            justify-content: center;
             gap: 20px;
+            margin-top: 40px;
         }
 
         .card {
@@ -146,8 +323,8 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             padding: 20px;
             margin-bottom: 20px;
-            width: 200px; /* Make cards smaller */
-            text-align: center; /* Center the text */
+            width: 200px;
+            text-align: center;
         }
 
         .card:hover {
@@ -155,15 +332,22 @@
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
 
+        .card img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+
         .card h3 {
             margin: 0;
             color: #4B0000;
-            font-size: 1.2rem; /* Smaller font size */
+            font-size: 1.2rem;
         }
 
         .card p {
             color: #666;
-            font-size: 0.9rem; /* Smaller font size */
+            font-size: 0.9rem;
         }
 
         footer {
@@ -181,6 +365,63 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 10px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5); /* Black background with opacity */
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 10px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .player-info {
+            text-align: center;
+        }
+
+        .player-info h2 {
+            color: #4B0000;
+            font-size: 2rem;
+        }
+
+        .player-info p {
+            font-size: 1.2rem;
+        }
+
+        .see-more {
+            color: #4B0000;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -225,34 +466,265 @@
             </div>
         </div>
     </header>
+    <div class="sidebar">
+        <h2>Football</h2>
+        <ul>
+            <li><a href="#stats">Stats</a></li>
+            <li><a href="#teams">Teams</a></li>
+            <li><a href="#coaches">Coaches</a></li>
+            <li><a href="#clubs">Clubs</a></li>
+            <li><a href="#players">Players</a></li>
+            <li><a href="#competitions">Competitions</a></li>
+        </ul>
+    </div>
     <div class="main-content">
         <section id="club-info" class="section">
             <h2>Club Name</h2>
-            <div class="card-container">
+            <div class="team-photo">
+                <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/7ff1d189d740524e0a78d2ea604330e44b7ce4c5/1*0WhCt1wGPEBhjHi4_uZxHw.jpg" alt="Team Photo">
+            </div>
+            <h2>Players</h2>
+            <div class="animation-container">
+                <div class="arrow left" onclick="showPreviousSet()">&#8592;</div>
+                <div class="central-logo">
+                    <p>Team Name</p>
+                </div>
+
+                <!-- Inner Circle (Set 1) -->
+                <div class="orbiting-element set1" data-player-name="Player 1" data-player-position="Forward" data-player-description="Player 1's description" style="--i: 0;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 1">
+                    <p class="bottom">Player 1<br>Forward</p>
+                </div>
+                <div class="orbiting-element set1" data-player-name="Player 2" data-player-position="Midfielder" data-player-description="Player 2's description" style="--i: 1;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 2">
+                    <p class="bottom">Player 2<br>Midfielder</p>
+                </div>
+                <div class="orbiting-element set1" data-player-name="Player 3" data-player-position="Defender" data-player-description="Player 3's description" style="--i: 2;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 3">
+                    <p class="bottom">Player 3<br>Defender</p>
+                </div>
+                <div class="orbiting-element set1 player4" data-player-name="Player 4" data-player-position="Goalkeeper" data-player-description="Player 4's description" style="--i: 3;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 4">
+                    <p class="top">Player 4<br>Goalkeeper</p>
+                </div>
+
+                <!-- Outer Circle -->
+                <div class="orbiting-element set1 outer" data-player-name="Player 5" data-player-position="Forward" data-player-description="Player 5's description" style="--i: 4;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 5">
+                    <p class="bottom">Player 5<br>Forward</p>
+                </div>
+                <div class="orbiting-element set1 outer" data-player-name="Player 6" data-player-position="Forward" data-player-description="Player 6's description" style="--i: 0;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 6">
+                    <p class="bottom">Player 6<br>Forward</p>
+                </div>
+                <div class="orbiting-element set1 outer player7" data-player-name="Player 7" data-player-position="Midfielder" data-player-description="Player 7's description" style="--i: 1;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 7">
+                    <p class="top">Player 7<br>Midfielder</p>
+                </div>
+                <div class="orbiting-element set1 outer" data-player-name="Player 8" data-player-position="Defender" data-player-description="Player 8's description" style="--i: 2;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 8">
+                    <p class="bottom">Player 8<br>Defender</p>
+                </div>
+                <div class="orbiting-element set1 outer" data-player-name="Player 9" data-player-position="Goalkeeper" data-player-description="Player 9's description" style="--i: 3;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 9">
+                    <p class="bottom">Player 9<br>Goalkeeper</p>
+                </div>
+                <div class="orbiting-element set1 outer" data-player-name="Player 10" data-player-position="Forward" data-player-description="Player 10's description" style="--i: 4;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 10">
+                    <p class="bottom">Player 10<br>Forward</p>
+                </div>
+                <div class="orbiting-element set1 outer" data-player-name="Player 11" data-player-position="Midfielder" data-player-description="Player 11's description" style="--i: 5;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 11">
+                    <p class="bottom">Player 11<br>Midfielder</p>
+                </div>
+
+                <!-- Second set of orbiting elements (hidden initially) -->
+                <!-- Inner Circle -->
+                <div class="orbiting-element set2" data-player-name="Player 12" data-player-position="Forward" data-player-description="Player 12's description" style="--i: 0;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 12">
+                    <p class="bottom">Player 12<br>Forward</p>
+                </div>
+                <div class="orbiting-element set2" data-player-name="Player 13" data-player-position="Midfielder" data-player-description="Player 13's description" style="--i: 1;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 13">
+                    <p class="bottom">Player 13<br>Midfielder</p>
+                </div>
+                <div class="orbiting-element set2" data-player-name="Player 14" data-player-position="Defender" data-player-description="Player 14's description" style="--i: 2;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 14">
+                    <p class="bottom">Player 14<br>Defender</p>
+                </div>
+                <div class="orbiting-element set2 player15" data-player-name="Player 15" data-player-position="Goalkeeper" data-player-description="Player 15's description" style="--i: 3;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 15">
+                    <p class="top">Player 15<br>Goalkeeper</p>
+                </div>
+
+                <!-- Outer Circle -->
+                <div class="orbiting-element set2 outer" data-player-name="Player 16" data-player-position="Forward" data-player-description="Player 16's description" style="--i: 4;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 16">
+                    <p class="bottom">Player 16<br>Forward</p>
+                </div>
+                <div class="orbiting-element set2 outer" data-player-name="Player 17" data-player-position="Forward" data-player-description="Player 17's description" style="--i: 0;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 17">
+                    <p class="bottom">Player 17<br>Forward</p>
+                </div>
+                <div class="orbiting-element set2 outer player18" data-player-name="Player 18" data-player-position="Midfielder" data-player-description="Player 18's description" style="--i: 1;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 18">
+                    <p class="top">Player 18<br>Midfielder</p>
+                </div>
+                <div class="orbiting-element set2 outer" data-player-name="Player 19" data-player-position="Defender" data-player-description="Player 19's description" style="--i: 2;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 19">
+                    <p class="bottom">Player 19<br>Defender</p>
+                </div>
+                <div class="orbiting-element set2 outer" data-player-name="Player 20" data-player-position="Goalkeeper" data-player-description="Player 20's description" style="--i: 3;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 20">
+                    <p class="bottom">Player 20<br>Goalkeeper</p>
+                </div>
+                <div class="orbiting-element set2 outer" data-player-name="Player 21" data-player-position="Forward" data-player-description="Player 21's description" style="--i: 4;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 21">
+                    <p class="bottom">Player 21<br>Forward</p>
+                </div>
+                <div class="orbiting-element set2 outer" data-player-name="Player 22" data-player-position="Midfielder" data-player-description="Player 22's description" style="--i: 5;">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 22">
+                    <p class="bottom">Player 22<br>Midfielder</p>
+                </div>
+
+                <div class="arrow right" onclick="showNextSet()">&#8594;</div>
+            </div>
+
+            <h2>Coaches</h2>
+            <div class="card-container1">
                 <div class="card">
+                    <img src="placeholder.png" alt="Coach Photo">
                     <h3>Coach Name</h3>
                     <p>Coach</p>
                 </div>
-                <div class="card">
-                    <h3>Player Name</h3>
-                    <p>Position: Forward</p>
-                </div>
-                <div class="card">
-                    <h3>Player Name</h3>
-                    <p>Position: Midfielder</p>
-                </div>
-                <div class="card">
-                    <h3>Player Name</h3>
-                    <p>Position: Defender</p>
-                </div>
-                <!-- Add more player cards here if needed -->
+                <!-- Add more coach cards here if needed -->
             </div>
         </section>
     </div>
+
+    <!-- Modal for player details -->
+    <div id="playerModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="player-info">
+                <h2 id="modalPlayerName">Player Name</h2>
+                <p id="modalPlayerPosition">Position</p>
+                <p id="modalPlayerDescription">Detailed description of the player, stats, history, etc.</p>
+                <p class="see-more">See More</p>
+            </div>
+        </div>
+    </div>
+
     <footer>
         <div class="footer-container">
             <p>&copy; 2024 Ashesi Sports Insight. All rights reserved.</p>
         </div>
     </footer>
+
+    <script>
+        const set1 = document.querySelectorAll('.orbiting-element.set1');
+        const set2 = document.querySelectorAll('.orbiting-element.set2');
+        let showingSet1 = true;
+
+        function showNextSet() {
+            if (showingSet1) {
+                set1.forEach(el => el.style.opacity = 0);
+                set2.forEach(el => el.style.opacity = 1);
+                showingSet1 = false;
+            }
+        }
+
+        function showPreviousSet() {
+            if (!showingSet1) {
+                set1.forEach(el => el.style.opacity = 1);
+                set2.forEach(el => el.style.opacity = 0);
+                showingSet1 = true;
+            }
+        }
+
+        window.addEventListener('scroll', function () {
+            const scrollPosition = window.scrollY;
+            const windowHeight = window.innerHeight;
+            const animationContainer = document.querySelector('.animation-container');
+            const containerTop = animationContainer.offsetTop;
+            const containerHeight = animationContainer.offsetHeight;
+
+            if (scrollPosition + windowHeight > containerTop && scrollPosition < containerTop + containerHeight) {
+                const scrollFraction = (scrollPosition + windowHeight - containerTop) / (containerHeight + windowHeight);
+                const innerElements1 = document.querySelectorAll('.orbiting-element.set1:not(.outer)');
+                const outerElements1 = document.querySelectorAll('.orbiting-element.set1.outer');
+                const innerElements2 = document.querySelectorAll('.orbiting-element.set2:not(.outer)');
+                const outerElements2 = document.querySelectorAll('.orbiting-element.set2.outer');
+
+                const numInnerElements1 = innerElements1.length;
+                const numOuterElements1 = outerElements1.length;
+                const numInnerElements2 = innerElements2.length;
+                const numOuterElements2 = outerElements2.length;
+
+                const angleStepInner1 = 360 / numInnerElements1;
+                const angleStepOuter1 = 360 / numOuterElements1;
+                const angleStepInner2 = 360 / numInnerElements2;
+                const angleStepOuter2 = 360 / numOuterElements2;
+
+                innerElements1.forEach((element, index) => {
+                    const orbitRotation = scrollFraction * 360 + angleStepInner1 * index;
+                    element.style.transform = `rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg)`;
+                });
+
+                outerElements1.forEach((element, index) => {
+                    const orbitRotation = scrollFraction * 360 + angleStepOuter1 * index;
+                    element.style.transform = `rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg)`;
+                });
+
+                innerElements2.forEach((element, index) => {
+                    const orbitRotation = scrollFraction * 360 + angleStepInner2 * index;
+                    element.style.transform = `rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg)`;
+                });
+
+                outerElements2.forEach((element, index) => {
+                    const orbitRotation = scrollFraction * 360 + angleStepOuter2 * index;
+                    element.style.transform = `rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg)`;
+                });
+            }
+        });
+
+        // Initialize the visibility of the elements
+        set1.forEach(el => el.style.opacity = 1);
+        set2.forEach(el => el.style.opacity = 0);
+
+        // Modal functionality
+        const modal = document.getElementById("playerModal");
+        const closeModal = document.querySelector(".modal .close");
+
+        // Function to open modal with player info
+        function openModal(playerName, playerPosition, playerDescription) {
+            document.getElementById("modalPlayerName").textContent = playerName;
+            document.getElementById("modalPlayerPosition").textContent = playerPosition;
+            document.getElementById("modalPlayerDescription").textContent = playerDescription;
+            modal.style.display = "block";
+        }
+
+        // Close the modal
+        closeModal.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        // Attach click event listeners to each player element
+        document.querySelectorAll('.orbiting-element').forEach(player => {
+            player.addEventListener('click', () => {
+                const playerName = player.getAttribute('data-player-name');
+                const playerPosition = player.getAttribute('data-player-position');
+                const playerDescription = player.getAttribute('data-player-description');
+                
+                openModal(playerName, playerPosition, playerDescription);
+            });
+        });
+    </script>
 </body>
 </html>

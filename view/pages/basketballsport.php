@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Football - Ashesi Sports Insight</title>
+    <title>Basketball - Ashesi Sports Insight</title>
     <link rel="stylesheet" href="styles.css">
     <style>
         body {
@@ -279,13 +279,11 @@
             <nav>
                 <ul>
                     <li>
-                         <li>
                         <a href="#">SPORTS</a>
                         <ul>
-                             <li><a href="footballsport.php">Football</a></li>
+                            <li><a href="footballsport.php">Football</a></li>
                             <li><a href="basketballsport.php">Basketball</a></li>
                         </ul>
-                    </li>
                     </li>
                     <li> <a href="homepage.php">HOME</a></li>
                     <li><a href="#">NEWS</a></li>
@@ -314,7 +312,7 @@
         </div>
     </header>
     <div class="sidebar">
-        <h2>Football</h2>
+        <h2>Basketball</h2>
         <ul>
             <li><a href="#stats">Stats</a></li>
             <li><a href="#teams">Teams</a></li>
@@ -326,12 +324,12 @@
     </div>
     <div class="main-content">
         <section id="welcome" class="section">
-            <h2>Welcome to the Football Insight of Ashesi</h2>
-            <p>Discover all the latest updates, stats, teams, coaches, clubs, players, and competitions in Ashesi football.</p>
+            <h2>Welcome to the Basketball Insight of Ashesi</h2>
+            <p>Discover all the latest updates, stats, teams, coaches, clubs, players, and competitions in Ashesi Basketball.</p>
         </section>
 
         <section id="clubs" class="section">
-            <h2>Football Clubs at Ashesi</h2>
+            <h2>Basketball Clubs at Ashesi</h2>
             <div class="toggle-buttons">
                 <button id="male-button" onclick="toggleView('male')" class="active">Male</button>
                 <button id="female-button" onclick="toggleView('female')">Female</button>

@@ -268,15 +268,21 @@ nav ul ul li a:hover {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    background-color: black;
+    background-color: rgba(255, 255, 255, 0.5); /* Transparent white */
     color: white;
     border: none;
-    font-size: 2rem;
+    font-size: 1.5rem; /* Adjust font size for thinner appearance */
+    line-height: 1; /* Adjust line height for better alignment */
     cursor: pointer;
     z-index: 3;
-    padding: 10px;
-    border-radius: 50%;
+    padding: 10px; /* Adjust padding as needed */
+    border-radius: 50%; /* Make it circular */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
 }
+
 
 .left-arrow {
     left: 10px;
@@ -815,7 +821,7 @@ footer {
                         <a href="#">SPORTS</a>
                         <ul>
                              <li><a href="footballsport.php">Football</a></li>
-                            <li><a href="#">Basketball</a></li>
+                            <li><a href="basketballsport.php">Basketball</a></li>
                         </ul>
                     </li>
                     <li><a href="#">NEWS</a></li>
