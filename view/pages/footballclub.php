@@ -6,7 +6,7 @@
     <title>Club Details - Ashesi Sports Insight</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        /* Basic CSS for styling */
+        /* Keeping your original CSS intact */
         body {
             margin: 0;
             font-family: Arial, sans-serif;
@@ -492,100 +492,100 @@
                 </div>
 
                 <!-- Inner Circle (Set 1) -->
-                <div class="orbiting-element set1" data-player-id="player1" data-player-name="Player 1" data-player-position="Forward" data-player-description="Player 1's description" style="--i: 0;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 1">
-                    <p class="bottom">Player 1<br>Forward</p>
+                <div class="orbiting-element set1" data-player-id="player1" style="--i: 0;">
+                    <img src="placeholder.png" alt="Player 1">
+                    <p class="bottom">Player 1<br>Position</p>
                 </div>
-                <div class="orbiting-element set1" data-player-id="player2" data-player-name="Player 2" data-player-position="Midfielder" data-player-description="Player 2's description" style="--i: 1;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 2">
-                    <p class="bottom">Player 2<br>Midfielder</p>
+                <div class="orbiting-element set1" data-player-id="player2" style="--i: 1;">
+                    <img src="placeholder.png" alt="Player 2">
+                    <p class="bottom">Player 2<br>Position</p>
                 </div>
-                <div class="orbiting-element set1" data-player-id="player3" data-player-name="Player 3" data-player-position="Defender" data-player-description="Player 3's description" style="--i: 2;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 3">
-                    <p class="bottom">Player 3<br>Defender</p>
+                <div class="orbiting-element set1" data-player-id="player3" style="--i: 2;">
+                    <img src="placeholder.png" alt="Player 3">
+                    <p class="bottom">Player 3<br>Position</p>
                 </div>
-                <div class="orbiting-element set1 player4" data-player-id="player4" data-player-name="Player 4" data-player-position="Goalkeeper" data-player-description="Player 4's description" style="--i: 3;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 4">
-                    <p class="top">Player 4<br>Goalkeeper</p>
+                <div class="orbiting-element set1 player4" data-player-id="player4" style="--i: 3;">
+                    <img src="placeholder.png" alt="Player 4">
+                    <p class="top">Player 4<br>Position</p>
                 </div>
 
                 <!-- Outer Circle -->
-                <div class="orbiting-element set1 outer" data-player-id="player5" data-player-name="Player 5" data-player-position="Forward" data-player-description="Player 5's description" style="--i: 4;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 5">
-                    <p class="bottom">Player 5<br>Forward</p>
+                <div class="orbiting-element set1 outer" data-player-id="player5" style="--i: 4;">
+                    <img src="placeholder.png" alt="Player 5">
+                    <p class="bottom">Player 5<br>Position</p>
                 </div>
-                <div class="orbiting-element set1 outer" data-player-id="player6" data-player-name="Player 6" data-player-position="Forward" data-player-description="Player 6's description" style="--i: 0;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 6">
-                    <p class="bottom">Player 6<br>Forward</p>
+                <div class="orbiting-element set1 outer" data-player-id="player6" style="--i: 0;">
+                    <img src="placeholder.png" alt="Player 6">
+                    <p class="bottom">Player 6<br>Position</p>
                 </div>
-                <div class="orbiting-element set1 outer player7" data-player-id="player7" data-player-name="Player 7" data-player-position="Midfielder" data-player-description="Player 7's description" style="--i: 1;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 7">
-                    <p class="top">Player 7<br>Midfielder</p>
+                <div class="orbiting-element set1 outer player7" data-player-id="player7" style="--i: 1;">
+                    <img src="placeholder.png" alt="Player 7">
+                    <p class="top">Player 7<br>Position</p>
                 </div>
-                <div class="orbiting-element set1 outer" data-player-id="player8" data-player-name="Player 8" data-player-position="Defender" data-player-description="Player 8's description" style="--i: 2;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 8">
-                    <p class="bottom">Player 8<br>Defender</p>
+                <div class="orbiting-element set1 outer" data-player-id="player8" style="--i: 2;">
+                    <img src="placeholder.png" alt="Player 8">
+                    <p class="bottom">Player 8<br>Position</p>
                 </div>
-                <div class="orbiting-element set1 outer" data-player-id="player9" data-player-name="Player 9" data-player-position="Goalkeeper" data-player-description="Player 9's description" style="--i: 3;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 9">
-                    <p class="bottom">Player 9<br>Goalkeeper</p>
+                <div class="orbiting-element set1 outer" data-player-id="player9" style="--i: 3;">
+                    <img src="placeholder.png" alt="Player 9">
+                    <p class="bottom">Player 9<br>Position</p>
                 </div>
-                <div class="orbiting-element set1 outer" data-player-id="player10" data-player-name="Player 10" data-player-position="Forward" data-player-description="Player 10's description" style="--i: 4;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 10">
-                    <p class="bottom">Player 10<br>Forward</p>
+                <div class="orbiting-element set1 outer" data-player-id="player10" style="--i: 4;">
+                    <img src="placeholder.png" alt="Player 10">
+                    <p class="bottom">Player 10<br>Position</p>
                 </div>
-                <div class="orbiting-element set1 outer" data-player-id="player11" data-player-name="Player 11" data-player-position="Midfielder" data-player-description="Player 11's description" style="--i: 5;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 11">
-                    <p class="bottom">Player 11<br>Midfielder</p>
+                <div class="orbiting-element set1 outer" data-player-id="player11" style="--i: 5;">
+                    <img src="placeholder.png" alt="Player 11">
+                    <p class="bottom">Player 11<br>Position</p>
                 </div>
 
                 <!-- Second set of orbiting elements (hidden initially) -->
                 <!-- Inner Circle -->
-                <div class="orbiting-element set2" data-player-id="player12" data-player-name="Player 12" data-player-position="Forward" data-player-description="Player 12's description" style="--i: 0;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 12">
-                    <p class="bottom">Player 12<br>Forward</p>
+                <div class="orbiting-element set2" data-player-id="player12" style="--i: 0;">
+                    <img src="placeholder.png" alt="Player 12">
+                    <p class="bottom">Player 12<br>Position</p>
                 </div>
-                <div class="orbiting-element set2" data-player-id="player13" data-player-name="Player 13" data-player-position="Midfielder" data-player-description="Player 13's description" style="--i: 1;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 13">
-                    <p class="bottom">Player 13<br>Midfielder</p>
+                <div class="orbiting-element set2" data-player-id="player13" style="--i: 1;">
+                    <img src="placeholder.png" alt="Player 13">
+                    <p class="bottom">Player 13<br>Position</p>
                 </div>
-                <div class="orbiting-element set2" data-player-id="player14" data-player-name="Player 14" data-player-position="Defender" data-player-description="Player 14's description" style="--i: 2;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 14">
-                    <p class="bottom">Player 14<br>Defender</p>
+                <div class="orbiting-element set2" data-player-id="player14" style="--i: 2;">
+                    <img src="placeholder.png" alt="Player 14">
+                    <p class="bottom">Player 14<br>Position</p>
                 </div>
-                <div class="orbiting-element set2 player15" data-player-id="player15" data-player-name="Player 15" data-player-position="Goalkeeper" data-player-description="Player 15's description" style="--i: 3;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 15">
-                    <p class="top">Player 15<br>Goalkeeper</p>
+                <div class="orbiting-element set2 player15" data-player-id="player15" style="--i: 3;">
+                    <img src="placeholder.png" alt="Player 15">
+                    <p class="top">Player 15<br>Position</p>
                 </div>
 
                 <!-- Outer Circle -->
-                <div class="orbiting-element set2 outer" data-player-id="player16" data-player-name="Player 16" data-player-position="Forward" data-player-description="Player 16's description" style="--i: 4;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 16">
-                    <p class="bottom">Player 16<br>Forward</p>
+                <div class="orbiting-element set2 outer" data-player-id="player16" style="--i: 4;">
+                    <img src="placeholder.png" alt="Player 16">
+                    <p class="bottom">Player 16<br>Position</p>
                 </div>
-                <div class="orbiting-element set2 outer" data-player-id="player17" data-player-name="Player 17" data-player-position="Forward" data-player-description="Player 17's description" style="--i: 0;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 17">
-                    <p class="bottom">Player 17<br>Forward</p>
+                <div class="orbiting-element set2 outer" data-player-id="player17" style="--i: 0;">
+                    <img src="placeholder.png" alt="Player 17">
+                    <p class="bottom">Player 17<br>Position</p>
                 </div>
-                <div class="orbiting-element set2 outer player18" data-player-id="player18" data-player-name="Player 18" data-player-position="Midfielder" data-player-description="Player 18's description" style="--i: 1;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 18">
-                    <p class="top">Player 18<br>Midfielder</p>
+                <div class="orbiting-element set2 outer player18" data-player-id="player18" style="--i: 1;">
+                    <img src="placeholder.png" alt="Player 18">
+                    <p class="top">Player 18<br>Position</p>
                 </div>
-                <div class="orbiting-element set2 outer" data-player-id="player19" data-player-name="Player 19" data-player-position="Defender" data-player-description="Player 19's description" style="--i: 2;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 19">
-                    <p class="bottom">Player 19<br>Defender</p>
+                <div class="orbiting-element set2 outer" data-player-id="player19" style="--i: 2;">
+                    <img src="placeholder.png" alt="Player 19">
+                    <p class="bottom">Player 19<br>Position</p>
                 </div>
-                <div class="orbiting-element set2 outer" data-player-id="player20" data-player-name="Player 20" data-player-position="Goalkeeper" data-player-description="Player 20's description" style="--i: 3;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 20">
-                    <p class="bottom">Player 20<br>Goalkeeper</p>
+                <div class="orbiting-element set2 outer" data-player-id="player20" style="--i: 3;">
+                    <img src="placeholder.png" alt="Player 20">
+                    <p class="bottom">Player 20<br>Position</p>
                 </div>
-                <div class="orbiting-element set2 outer" data-player-id="player21" data-player-name="Player 21" data-player-position="Forward" data-player-description="Player 21's description" style="--i: 4;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 21">
-                    <p class="bottom">Player 21<br>Forward</p>
+                <div class="orbiting-element set2 outer" data-player-id="player21" style="--i: 4;">
+                    <img src="placeholder.png" alt="Player 21">
+                    <p class="bottom">Player 21<br>Position</p>
                 </div>
-                <div class="orbiting-element set2 outer" data-player-id="player22" data-player-name="Player 22" data-player-position="Midfielder" data-player-description="Player 22's description" style="--i: 5;">
-                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" alt="Player 22">
-                    <p class="bottom">Player 22<br>Midfielder</p>
+                <div class="orbiting-element set2 outer" data-player-id="player22" style="--i: 5;">
+                    <img src="placeholder.png" alt="Player 22">
+                    <p class="bottom">Player 22<br>Position</p>
                 </div>
 
                 <div class="arrow right" onclick="showNextSet()">&#8594;</div>
@@ -624,6 +624,88 @@
     </footer>
 
     <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const clubId = urlParams.get('club_id');
+
+        const clubs = {
+            1: {
+                name: "Ashesi Eagles",
+                teamPhoto: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/7ff1d189d740524e0a78d2ea604330e44b7ce4c5/1*0WhCt1wGPEBhjHi4_uZxHw.jpg",
+                players: [
+                    { id: "player1", name: "Player 1", position: "Forward", description: "Player 1's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player2", name: "Player 2", position: "Midfielder", description: "Player 2's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player3", name: "Player 3", position: "Defender", description: "Player 3's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player4", name: "Player 4", position: "Goalkeeper", description: "Player 4's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player5", name: "Player 5", position: "Forward", description: "Player 5's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player6", name: "Player 6", position: "Forward", description: "Player 6's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player7", name: "Player 7", position: "Midfielder", description: "Player 7's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player8", name: "Player 8", position: "Defender", description: "Player 8's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player9", name: "Player 9", position: "Goalkeeper", description: "Player 9's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player10", name: "Player 10", position: "Forward", description: "Player 10's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player11", name: "Player 11", position: "Midfielder", description: "Player 11's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player12", name: "Player 12", position: "Forward", description: "Player 12's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player13", name: "Player 13", position: "Midfielder", description: "Player 13's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player14", name: "Player 14", position: "Defender", description: "Player 14's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player15", name: "Player 15", position: "Goalkeeper", description: "Player 15's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player16", name: "Player 16", position: "Forward", description: "Player 16's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player17", name: "Player 17", position: "Forward", description: "Player 17's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player18", name: "Player 18", position: "Midfielder", description: "Player 18's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player19", name: "Player 19", position: "Defender", description: "Player 19's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player20", name: "Player 20", position: "Goalkeeper", description: "Player 20's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player21", name: "Player 21", position: "Forward", description: "Player 21's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                    { id: "player22", name: "Player 22", position: "Midfielder", description: "Player 22's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
+                ]
+            },
+            2: {
+                name: "Ashesi Falcons",
+                teamPhoto: "https://example.com/team-photo-falcons.jpg",
+                players: [
+                    { id: "player1", name: "Player 1", position: "Forward", description: "Player 1's description", image: "https://example.com/player1.jpg" },
+                    { id: "player2", name: "Player 2", position: "Midfielder", description: "Player 2's description", image: "https://example.com/player2.jpg" },
+                    { id: "player3", name: "Player 3", position: "Defender", description: "Player 3's description", image: "https://example.com/player3.jpg" },
+                    { id: "player4", name: "Player 4", position: "Goalkeeper", description: "Player 4's description", image: "https://example.com/player4.jpg" },
+                    { id: "player5", name: "Player 5", position: "Forward", description: "Player 5's description", image: "https://example.com/player5.jpg" },
+                    { id: "player6", name: "Player 6", position: "Forward", description: "Player 6's description", image: "https://example.com/player6.jpg" },
+                    { id: "player7", name: "Player 7", position: "Midfielder", description: "Player 7's description", image: "https://example.com/player7.jpg" },
+                    { id: "player8", name: "Player 8", position: "Defender", description: "Player 8's description", image: "https://example.com/player8.jpg" },
+                    { id: "player9", name: "Player 9", position: "Goalkeeper", description: "Player 9's description", image: "https://example.com/player9.jpg" },
+                    { id: "player10", name: "Player 10", position: "Forward", description: "Player 10's description", image: "https://example.com/player10.jpg" },
+                    { id: "player11", name: "Player 11", position: "Midfielder", description: "Player 11's description", image: "https://example.com/player11.jpg" },
+                    { id: "player12", name: "Player 12", position: "Forward", description: "Player 12's description", image: "https://example.com/player12.jpg" },
+                    { id: "player13", name: "Player 13", position: "Midfielder", description: "Player 13's description", image: "https://example.com/player13.jpg" },
+                    { id: "player14", name: "Player 14", position: "Defender", description: "Player 14's description", image: "https://example.com/player14.jpg" },
+                    { id: "player15", name: "Player 15", position: "Goalkeeper", description: "Player 15's description", image: "https://example.com/player15.jpg" },
+                    { id: "player16", name: "Player 16", position: "Forward", description: "Player 16's description", image: "https://example.com/player16.jpg" },
+                    { id: "player17", name: "Player 17", position: "Forward", description: "Player 17's description", image: "https://example.com/player17.jpg" },
+                    { id: "player18", name: "Player 18", position: "Midfielder", description: "Player 18's description", image: "https://example.com/player18.jpg" },
+                    { id: "player19", name: "Player 19", position: "Defender", description: "Player 19's description", image: "https://example.com/player19.jpg" },
+                    { id: "player20", name: "Player 20", position: "Goalkeeper", description: "Player 20's description", image: "https://example.com/player20.jpg" },
+                    { id: "player21", name: "Player 21", position: "Forward", description: "Player 21's description", image: "https://example.com/player21.jpg" },
+                    { id: "player22", name: "Player 22", position: "Midfielder", description: "Player 22's description", image: "https://example.com/player22.jpg" },
+                ]
+            },
+            // Add more clubs as needed
+        };
+
+        const club = clubs[clubId];
+        if (club) {
+            document.querySelector('#club-info h2').textContent = club.name;
+            document.querySelector('.team-photo img').src = club.teamPhoto;
+            document.querySelector('.central-logo p').textContent = club.name;
+
+            // Populate players
+            club.players.forEach((player, index) => {
+                const orbitingElement = document.querySelector(`.orbiting-element[data-player-id="player${index + 1}"]`);
+                if (orbitingElement) {
+                    orbitingElement.dataset.playerName = player.name;
+                    orbitingElement.dataset.playerPosition = player.position;
+                    orbitingElement.dataset.playerDescription = player.description;
+                    orbitingElement.querySelector('img').src = player.image;
+                    orbitingElement.querySelector('p').innerHTML = `${player.name}<br>${player.position}`;
+                }
+            });
+        }
+
         const set1 = document.querySelectorAll('.orbiting-element.set1');
         const set2 = document.querySelectorAll('.orbiting-element.set2');
         let showingSet1 = true;

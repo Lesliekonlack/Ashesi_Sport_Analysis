@@ -1,3 +1,33 @@
+<?php
+session_start();
+include '../../settings/connection.php'; // Include your database connection file
+
+// Enable error reporting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Fetch teams from the database
+$teams = [];
+$sql = "SELECT t.TeamID, t.TeamName, t.CoachID, t.TeamGender, t.Logo, c.Name AS CoachName 
+        FROM teams t
+        JOIN coaches c ON t.CoachID = c.CoachID
+        WHERE t.SportID = (SELECT SportID FROM sports WHERE SportName = 'Football')";
+try {
+    $stmt = $conn->query($sql);
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $teams[] = $row;
+    }
+} catch (PDOException $e) {
+    echo 'Query failed: ' . $e->getMessage();
+    exit();
+}
+
+// Check if user is logged in and is a coach
+$is_coach = isset($_SESSION['coach_id']);
+$user_team_id = $is_coach && isset($_SESSION['team_id']) ? $_SESSION['team_id'] : null;
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -92,7 +122,7 @@
         .card-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 100px;
+            gap: 20px;
         }
 
         .card {
@@ -102,10 +132,12 @@
             overflow: hidden;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             padding: 20px;
-            margin-bottom: 20px;
-            width: calc(140.333% - 10px); /* Responsive card width */
+            width: calc(33.333% - 40px); /* Responsive card width */
             box-sizing: border-box;
             cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .card:hover {
@@ -123,22 +155,37 @@
             margin: 0;
             color: #4B0000;
             font-size: 1.2rem; /* Smaller font size */
+            text-align: center;
         }
 
         .card p {
             color: #666;
             font-size: 0.9rem; /* Smaller font size */
+            text-align: center;
         }
 
-        .upload-logo {
+        .actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .upload-logo, .delete-logo {
             background-color: #1e90ff;
             color: white;
             border: none;
             padding: 8px 16px;
-            margin-top: 10px;
             cursor: pointer;
             border-radius: 5px;
             display: inline-block;
+            width: 100%;
+            text-align: center;
+        }
+
+        .delete-logo {
+            background-color: #ff4b4b;
         }
 
         .header-container {
@@ -242,6 +289,36 @@
             cursor: pointer;
         }
 
+        .profile-name {
+            font-size: 1rem;
+            color: #4B0000;
+            font-weight: bold;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        .profile-name:hover .dropdown-content {
+            display: block;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #ddd;
+        }
+
         footer {
             background-color: #4B0000;
             color: white;
@@ -267,6 +344,27 @@
             document.getElementById('male-button').classList.toggle('active', view === 'male');
             document.getElementById('female-button').classList.toggle('active', view === 'female');
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttons = document.querySelectorAll('.toggle-buttons button');
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    buttons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            const uploadForms = document.querySelectorAll('.upload-logo-form');
+            uploadForms.forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    const fileInput = this.querySelector('input[type="file"]');
+                    if (!fileInput.files.length) {
+                        event.preventDefault();
+                        alert('Please choose a file to upload.');
+                    }
+                });
+            });
+        });
     </script>
 </head>
 <body>
@@ -279,13 +377,11 @@
             <nav>
                 <ul>
                     <li>
-                         <li>
                         <a href="#">SPORTS</a>
                         <ul>
-                             <li><a href="footballsport.php">Football</a></li>
+                            <li><a href="footballsport.php">Football</a></li>
                             <li><a href="basketballsport.php">Basketball</a></li>
                         </ul>
-                    </li>
                     </li>
                     <li> <a href="homepage.php">HOME</a></li>
                     <li><a href="#">NEWS</a></li>
@@ -309,7 +405,15 @@
             </nav>
             <div class="nav-icons">
                 <img src="https://cdn-icons-png.flaticon.com/512/54/54481.png" alt="Search Icon" class="search-icon">
-                <img src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png" alt="Profile Icon" class="profile-icon">
+                <?php if (isset($_SESSION['coach_name'])): ?>
+                    <span class="profile-name"><?php echo htmlspecialchars($_SESSION['coach_name']); ?>
+                        <div class="dropdown-content">
+                            <a href="../../action/logout.php">Logout</a>
+                        </div>
+                    </span>
+                <?php else: ?>
+                    <img src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png" alt="Profile Icon" class="profile-icon">
+                <?php endif; ?>
             </div>
         </div>
     </header>
@@ -338,43 +442,53 @@
             </div>
 
             <div id="male-clubs" class="card-container">
-                <a href="club.php?club_id=1">
-                    <div class="card">
-                        <img src="placeholder.png" alt="Default Logo" style="width:100px; height:100px;">
-                        <h3>Ashesi Eagles</h3>
-                        <p>Coached by John Doe</p>
-                        <button class="upload-logo">Upload Logo</button>
-                    </div>
-                </a>
-                <a href="club.php?club_id=2">
-                    <div class="card">
-                        <img src="placeholder.png" alt="Default Logo" style="width:100px; height:100px;">
-                        <h3>Ashesi Falcons</h3>
-                        <p>Coached by Jane Smith</p>
-                        <button class="upload-logo">Upload Logo</button>
-                    </div>
-                </a>
-                <!-- Add more male club cards here -->
+                <?php foreach ($teams as $team): ?>
+                    <?php if ($team['TeamGender'] === 'Male'): ?>
+                        <div class="card">
+                            <img src="<?php echo htmlspecialchars($team['Logo'] ?? '../../uploads/default_logo.png'); ?>" alt="Team Logo" style="width:100px; height:100px;">
+                            <h3><?php echo htmlspecialchars($team['TeamName']); ?></h3>
+                            <p>Coached by <?php echo htmlspecialchars($team['CoachName']); ?></p>
+                            <?php if ($is_coach && $user_team_id == $team['TeamID']): ?>
+                                <div class="actions">
+                                    <form class="upload-logo-form" action="../../action/upload_logo.php" method="POST" enctype="multipart/form-data">
+                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
+                                        <input type="file" name="team_logo">
+                                        <button type="submit" class="upload-logo">Upload Logo</button>
+                                    </form>
+                                    <form action="../../action/delete_logo.php" method="POST">
+                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
+                                        <button type="submit" class="delete-logo">Delete Logo</button>
+                                    </form>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
             </div>
 
             <div id="female-clubs" class="card-container" style="display:none;">
-                <a href="club.php?club_id=3">
-                    <div class="card">
-                        <img src="placeholder.png" alt="Default Logo" style="width:100px; height:100px;">
-                        <h3>Ashesi Eagles (Women)</h3>
-                        <p>Coached by Lisa Doe</p>
-                        <button class="upload-logo">Upload Logo</button>
-                    </div>
-                </a>
-                <a href="club.php?club_id=4">
-                    <div class="card">
-                        <img src="placeholder.png" alt="Default Logo" style="width:100px; height:100px;">
-                        <h3>Ashesi Falcons (Women)</h3>
-                        <p>Coached by Mary Smith</p>
-                        <button class="upload-logo">Upload Logo</button>
-                    </div>
-                </a>
-                <!-- Add more female club cards here -->
+                <?php foreach ($teams as $team): ?>
+                    <?php if ($team['TeamGender'] === 'Female'): ?>
+                        <div class="card">
+                            <img src="<?php echo htmlspecialchars($team['Logo'] ?? '../../uploads/default_logo.png'); ?>" alt="Team Logo" style="width:100px; height:100px;">
+                            <h3><?php echo htmlspecialchars($team['TeamName']); ?></h3>
+                            <p>Coached by <?php echo htmlspecialchars($team['CoachName']); ?></p>
+                            <?php if ($is_coach && $user_team_id == $team['TeamID']): ?>
+                                <div class="actions">
+                                    <form class="upload-logo-form" action="../../action/upload_logo.php" method="POST" enctype="multipart/form-data">
+                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
+                                        <input type="file" name="team_logo">
+                                        <button type="submit" class="upload-logo">Upload Logo</button>
+                                    </form>
+                                    <form action="../../action/delete_logo.php" method="POST">
+                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
+                                        <button type="submit" class="delete-logo">Delete Logo</button>
+                                    </form>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
             </div>
         </section>
     </div>
