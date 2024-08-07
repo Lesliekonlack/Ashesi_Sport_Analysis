@@ -1,3 +1,224 @@
+<?php
+session_start();
+include '../../settings/connection.php'; // Include your database connection file
+
+// Enable error reporting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Fetch team details
+$team = [];
+$team_id = isset($_GET['team_id']) ? (int)$_GET['team_id'] : null;
+
+if ($team_id) {
+    $sql = "SELECT t.*, c.Name AS CoachName, c.CoachImage 
+            FROM teams t 
+            LEFT JOIN coaches c ON t.CoachID = c.CoachID 
+            WHERE t.TeamID = ?";
+    try {
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$team_id]);
+        $team = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        echo 'Query failed: ' . $e->getMessage();
+        exit();
+    }
+}
+
+// Fetch players for the team
+$players = [];
+if ($team_id) {
+    $sql = "SELECT * FROM players WHERE TeamID = ?";
+    try {
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$team_id]);
+        $players = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        echo 'Query failed: ' . $e->getMessage();
+        exit();
+    }
+}
+
+// Check if user is logged in and is a coach
+$is_coach = isset($_SESSION['coach_id']);
+$user_team_id = $is_coach && isset($_SESSION['team_id']) ? $_SESSION['team_id'] : null;
+
+// Handle file uploads and deletions
+function handleFileUpload($fieldName, $uploadDir) {
+    if (isset($_FILES[$fieldName]) && $_FILES[$fieldName]['error'] == UPLOAD_ERR_OK) {
+        $fileTmpPath = $_FILES[$fieldName]['tmp_name'];
+        $fileName = $_FILES[$fieldName]['name'];
+        $fileSize = $_FILES[$fieldName]['size'];
+        $fileType = $_FILES[$fieldName]['type'];
+        $fileNameCmps = explode(".", $fileName);
+        $fileExtension = strtolower(end($fileNameCmps));
+
+        $newFileName = md5(time() . $fileName) . '.' . $fileExtension;
+        $uploadFileDir = $uploadDir;
+        $dest_path = $uploadFileDir . $newFileName;
+
+        if (move_uploaded_file($fileTmpPath, $dest_path)) {
+            return $newFileName;
+        }
+    }
+    return null;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $response = [];
+
+    // Add new player
+    if (isset($_POST['new_player_name']) && $team_id == $user_team_id) {
+        $player_name = $_POST['new_player_name'];
+        $player_position = $_POST['new_player_position'];
+        $uploadedFileName = handleFileUpload('new_player_image', '../../uploads/');
+
+        $sql = "INSERT INTO players (Name, Position, Image, TeamID, SportID) VALUES (?, ?, ?, ?, ?)";
+        try {
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([$player_name, $player_position, $uploadedFileName, $team_id, $team['SportID']]);
+            // Redirect to the same page to reload it
+            header("Location: " . $_SERVER['REQUEST_URI']);
+            exit();
+        } catch (PDOException $e) {
+            $response['status'] = 'error';
+            $response['message'] = 'Insert failed: ' . $e->getMessage();
+        }
+
+        echo json_encode($response);
+        exit();
+    }
+
+    // Change player picture
+    if (isset($_POST['change_player_id']) && $team_id == $user_team_id) {
+        $player_id = (int)$_POST['change_player_id'];
+        $uploadedFileName = handleFileUpload('change_player_image', '../../uploads/');
+        if ($uploadedFileName) {
+            $sql = "UPDATE players SET Image = ? WHERE PlayerID = ?";
+            try {
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([$uploadedFileName, $player_id]);
+                $response['status'] = 'success';
+                $response['message'] = 'Player picture updated successfully.';
+                $response['image'] = $uploadedFileName;
+            } catch (PDOException $e) {
+                $response['status'] = 'error';
+                $response['message'] = 'Update failed: ' . $e->getMessage();
+            }
+        } else {
+            $response['status'] = 'error';
+            $response['message'] = 'File upload failed.';
+        }
+
+        echo json_encode($response);
+        exit();
+    }
+
+    // Handle other uploads and deletions
+    if (isset($_FILES['team_image']) && $team_id == $user_team_id) {
+        $uploadedFileName = handleFileUpload('team_image', '../../uploads/');
+        if ($uploadedFileName) {
+            $sql = "UPDATE teams SET TeamPhoto = ? WHERE TeamID = ?";
+            try {
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([$uploadedFileName, $team_id]);
+                $response['status'] = 'success';
+                $response['message'] = 'Team photo updated successfully.';
+                $response['image'] = $uploadedFileName;
+            } catch (PDOException $e) {
+                $response['status'] = 'error';
+                $response['message'] = 'Update failed: ' . $e->getMessage();
+            }
+        } else {
+            $response['status'] = 'error';
+            $response['message'] = 'File upload failed.';
+        }
+
+        echo json_encode($response);
+        exit();
+    }
+    if (isset($_POST['delete_team_image']) && $team_id == $user_team_id) {
+        $sql = "UPDATE teams SET TeamPhoto = NULL WHERE TeamID = ?";
+        try {
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([$team_id]);
+            $response['status'] = 'success';
+            $response['message'] = 'Team photo deleted successfully.';
+        } catch (PDOException $e) {
+            $response['status'] = 'error';
+            $response['message'] = 'Update failed: ' . $e->getMessage();
+        }
+
+        echo json_encode($response);
+        exit();
+    }
+    if (isset($_POST['delete_player_id']) && $team_id == $user_team_id) {
+        if (!empty($_POST['delete_player_id'])) {
+            $player_id = (int)$_POST['delete_player_id'];
+            $sql = "DELETE FROM players WHERE PlayerID = ?";
+            try {
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([$player_id]);
+                $response['status'] = 'success';
+                $response['message'] = 'Player deleted successfully.';
+                $response['player_id'] = $player_id;
+            } catch (PDOException $e) {
+                $response['status'] = 'error';
+                $response['message'] = 'Delete failed: ' . $e->getMessage();
+            }
+        } else {
+            $response['status'] = 'error';
+            $response['message'] = 'No player selected to delete.';
+        }
+        echo json_encode($response);
+        exit();
+    }
+    if (isset($_FILES['coach_image']) && $team_id == $user_team_id) {
+        $uploadedFileName = handleFileUpload('coach_image', '../../uploads/');
+        if ($uploadedFileName) {
+            $sql = "UPDATE coaches SET CoachImage = ? WHERE CoachID = ?";
+            try {
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([$uploadedFileName, $team['CoachID']]);
+                $response['status'] = 'success';
+                $response['message'] = 'Coach photo updated successfully.';
+                $response['image'] = $uploadedFileName;
+            } catch (PDOException $e) {
+                $response['status'] = 'error';
+                $response['message'] = 'Update failed: ' . $e->getMessage();
+            }
+        } else {
+            $response['status'] = 'error';
+            $response['message'] = 'File upload failed.';
+        }
+
+        echo json_encode($response);
+        exit();
+    }
+    if (isset($_POST['delete_coach_image']) && $team_id == $user_team_id) {
+        $sql = "UPDATE coaches SET CoachImage = NULL WHERE CoachID = ?";
+        try {
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([$team['CoachID']]);
+            $response['status'] = 'success';
+            $response['message'] = 'Coach photo deleted successfully.';
+        } catch (PDOException $e) {
+            $response['status'] = 'error';
+            $response['message'] = 'Update failed: ' . $e->getMessage();
+        }
+
+        echo json_encode($response);
+        exit();
+    }
+}
+
+// Function to get image path
+function getImagePath($image, $defaultImage) {
+    return $image ? '../../uploads/' . $image : $defaultImage;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +227,6 @@
     <title>Club Details - Ashesi Sports Insight</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        /* Keeping your original CSS intact */
         body {
             margin: 0;
             font-family: Arial, sans-serif;
@@ -129,6 +349,18 @@
             overflow-y: auto;
         }
 
+        .sidebar .team-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar .team-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
         .sidebar h2 {
             color: white;
             font-size: 1.5rem;
@@ -204,6 +436,7 @@
             background-size: cover, 50px 50px, 50px 50px;
         }
 
+        
         .central-logo {
             position: absolute;
             width: 200px;
@@ -424,6 +657,77 @@
             cursor: pointer;
             text-decoration: underline;
         }
+
+        .form-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .form-container input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .form-container button {
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            color: white;
+            background-color: #4B0000;
+            transition: background-color 0.3s ease;
+        }
+
+        .form-container button:hover {
+            background-color: #333;
+        }
+        /* Dropdown styling similar to footballsport.php */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropbtn {
+            background-color: #4B0000;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #ddd;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .dropdown:hover .dropbtn {
+            background-color: #3e8e41;
+        }
     </style>
 </head>
 <body>
@@ -462,144 +766,126 @@
                 </ul>
             </nav>
             <div class="nav-icons">
-                <img src="https://cdn-icons-png.flaticon.com/512/54/54481.png" alt="Search Icon" class="search-icon">
-                <img src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png" alt="Profile Icon" class="profile-icon">
+                <?php if (isset($_SESSION['coach_id'])): ?>
+                    <?php if ($is_coach && $user_team_id == $team_id): ?>
+                        <div class="dropdown">
+                            <button class="dropbtn">Welcome, <?php echo htmlspecialchars($_SESSION['coach_name']); ?></button>
+                            <div class="dropdown-content">
+                                <a href="../../action/logout.php">Logout</a>
+                            </div>
+                        </div>
+                    <?php else: ?>
+                        <div class="dropdown">
+                            <button class="dropbtn"><?php echo htmlspecialchars($_SESSION['coach_name']); ?></button>
+                            <div class="dropdown-content">
+                                <a href="../../settings/logout.php">Logout</a>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <img src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png" alt="Profile Icon" class="profile-icon">
+                <?php endif; ?>
             </div>
         </div>
     </header>
     <div class="sidebar">
-        <h2>Football</h2>
+        <div class="team-info">
+            <img src="<?php echo getImagePath($team['Logo'] ?? null, 'default_logo.png'); ?>" alt="Team Logo">
+            <h2><?php echo htmlspecialchars($team['TeamName'] ?? 'Football'); ?></h2>
+        </div>
         <ul>
-            <li><a href="#stats">Stats</a></li>
-            <li><a href="#teams">Teams</a></li>
-            <li><a href="#coaches">Coaches</a></li>
-            <li><a href="#clubs">Clubs</a></li>
+            <li><a href="#stats">Team Stories</a></li>
+            <li><a href="#teams">Team Stats</a></li>
             <li><a href="#players">Players</a></li>
-            <li><a href="#competitions">Competitions</a></li>
+            <li><a href="upcoming_matches.php?team_id=<?php echo htmlspecialchars($team['TeamID']); ?>">Upcoming Matches</a></li>
+            <li><a href="#competitioans">Upcoming Competitions</a></li>
+            <li><a href="#competitioans">Awards</a></li>
+            <li><a href="#competitioans">Fans</a></li>
+
         </ul>
     </div>
     <div class="main-content">
         <section id="club-info" class="section">
-            <h2>Club Name</h2>
+            <h2><?php echo htmlspecialchars($team['TeamName'] ?? 'Club Name'); ?></h2>
             <div class="team-photo">
-                <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/7ff1d189d740524e0a78d2ea604330e44b7ce4c5/1*0WhCt1wGPEBhjHi4_uZxHw.jpg" alt="Team Photo">
+                <img src="<?php echo getImagePath($team['TeamPhoto'] ?? null, 'default_team_photo.jpg'); ?>" alt="Team Photo" id="teamPhoto">
             </div>
+            <?php if ($is_coach && $team && $team['TeamID'] == $user_team_id): ?>
+                <div class="form-container">
+                    <form id="teamPhotoForm" method="post" enctype="multipart/form-data">
+                        <input type="file" name="team_image" id="teamImageInput">
+                        <button type="submit">Upload Team Photo</button>
+                        <button type="button" id="deleteTeamPhotoButton">Delete Team Photo</button>
+                    </form>
+                </div>
+            <?php endif; ?>
             <h2>Players</h2>
             <div class="animation-container">
-                <div class="arrow left" onclick="showPreviousSet()">&#8592;</div>
+                <?php if (count($players) > 11): ?>
+                    <div class="arrow left" onclick="showPreviousSet()">&#8592;</div>
+                <?php endif; ?>
                 <div class="central-logo">
-                    <p>Team Name</p>
+                    <p><?php echo htmlspecialchars($team['TeamName'] ?? 'Team Name'); ?></p>
                 </div>
 
-                <!-- Inner Circle (Set 1) -->
-                <div class="orbiting-element set1" data-player-id="player1" style="--i: 0;">
-                    <img src="placeholder.png" alt="Player 1">
-                    <p class="bottom">Player 1<br>Position</p>
-                </div>
-                <div class="orbiting-element set1" data-player-id="player2" style="--i: 1;">
-                    <img src="placeholder.png" alt="Player 2">
-                    <p class="bottom">Player 2<br>Position</p>
-                </div>
-                <div class="orbiting-element set1" data-player-id="player3" style="--i: 2;">
-                    <img src="placeholder.png" alt="Player 3">
-                    <p class="bottom">Player 3<br>Position</p>
-                </div>
-                <div class="orbiting-element set1 player4" data-player-id="player4" style="--i: 3;">
-                    <img src="placeholder.png" alt="Player 4">
-                    <p class="top">Player 4<br>Position</p>
-                </div>
+                <?php
+                foreach ($players as $index => $player):
+                    $set_class = $index < 11 ? 'set1' : 'set2';
+                    $circle_class = $index < 4 || ($index >= 11 && $index < 15) ? '' : 'outer';
+                    $position_class = in_array($index, [3, 6, 14, 17]) ? 'top' : 'bottom';
+                    ?>
+                    <div class="orbiting-element <?php echo $set_class . ' ' . $circle_class; ?>" data-player-id="<?php echo htmlspecialchars($player['PlayerID']); ?>" style="--i: <?php echo $index % 11; ?>;">
+                        <img src="<?php echo getImagePath($player['Image'] ?? null, 'placeholder.png'); ?>" alt="<?php echo htmlspecialchars($player['Name']); ?>">
+                        <p class="<?php echo $position_class; ?>"><?php echo htmlspecialchars($player['Name']); ?><br><?php echo htmlspecialchars($player['Position']); ?></p>
+                    </div>
+                <?php endforeach; ?>
 
-                <!-- Outer Circle -->
-                <div class="orbiting-element set1 outer" data-player-id="player5" style="--i: 4;">
-                    <img src="placeholder.png" alt="Player 5">
-                    <p class="bottom">Player 5<br>Position</p>
-                </div>
-                <div class="orbiting-element set1 outer" data-player-id="player6" style="--i: 0;">
-                    <img src="placeholder.png" alt="Player 6">
-                    <p class="bottom">Player 6<br>Position</p>
-                </div>
-                <div class="orbiting-element set1 outer player7" data-player-id="player7" style="--i: 1;">
-                    <img src="placeholder.png" alt="Player 7">
-                    <p class="top">Player 7<br>Position</p>
-                </div>
-                <div class="orbiting-element set1 outer" data-player-id="player8" style="--i: 2;">
-                    <img src="placeholder.png" alt="Player 8">
-                    <p class="bottom">Player 8<br>Position</p>
-                </div>
-                <div class="orbiting-element set1 outer" data-player-id="player9" style="--i: 3;">
-                    <img src="placeholder.png" alt="Player 9">
-                    <p class="bottom">Player 9<br>Position</p>
-                </div>
-                <div class="orbiting-element set1 outer" data-player-id="player10" style="--i: 4;">
-                    <img src="placeholder.png" alt="Player 10">
-                    <p class="bottom">Player 10<br>Position</p>
-                </div>
-                <div class="orbiting-element set1 outer" data-player-id="player11" style="--i: 5;">
-                    <img src="placeholder.png" alt="Player 11">
-                    <p class="bottom">Player 11<br>Position</p>
-                </div>
-
-                <!-- Second set of orbiting elements (hidden initially) -->
-                <!-- Inner Circle -->
-                <div class="orbiting-element set2" data-player-id="player12" style="--i: 0;">
-                    <img src="placeholder.png" alt="Player 12">
-                    <p class="bottom">Player 12<br>Position</p>
-                </div>
-                <div class="orbiting-element set2" data-player-id="player13" style="--i: 1;">
-                    <img src="placeholder.png" alt="Player 13">
-                    <p class="bottom">Player 13<br>Position</p>
-                </div>
-                <div class="orbiting-element set2" data-player-id="player14" style="--i: 2;">
-                    <img src="placeholder.png" alt="Player 14">
-                    <p class="bottom">Player 14<br>Position</p>
-                </div>
-                <div class="orbiting-element set2 player15" data-player-id="player15" style="--i: 3;">
-                    <img src="placeholder.png" alt="Player 15">
-                    <p class="top">Player 15<br>Position</p>
-                </div>
-
-                <!-- Outer Circle -->
-                <div class="orbiting-element set2 outer" data-player-id="player16" style="--i: 4;">
-                    <img src="placeholder.png" alt="Player 16">
-                    <p class="bottom">Player 16<br>Position</p>
-                </div>
-                <div class="orbiting-element set2 outer" data-player-id="player17" style="--i: 0;">
-                    <img src="placeholder.png" alt="Player 17">
-                    <p class="bottom">Player 17<br>Position</p>
-                </div>
-                <div class="orbiting-element set2 outer player18" data-player-id="player18" style="--i: 1;">
-                    <img src="placeholder.png" alt="Player 18">
-                    <p class="top">Player 18<br>Position</p>
-                </div>
-                <div class="orbiting-element set2 outer" data-player-id="player19" style="--i: 2;">
-                    <img src="placeholder.png" alt="Player 19">
-                    <p class="bottom">Player 19<br>Position</p>
-                </div>
-                <div class="orbiting-element set2 outer" data-player-id="player20" style="--i: 3;">
-                    <img src="placeholder.png" alt="Player 20">
-                    <p class="bottom">Player 20<br>Position</p>
-                </div>
-                <div class="orbiting-element set2 outer" data-player-id="player21" style="--i: 4;">
-                    <img src="placeholder.png" alt="Player 21">
-                    <p class="bottom">Player 21<br>Position</p>
-                </div>
-                <div class="orbiting-element set2 outer" data-player-id="player22" style="--i: 5;">
-                    <img src="placeholder.png" alt="Player 22">
-                    <p class="bottom">Player 22<br>Position</p>
-                </div>
-
-                <div class="arrow right" onclick="showNextSet()">&#8594;</div>
+                <?php if (count($players) > 11): ?>
+                    <div class="arrow right" onclick="showNextSet()">&#8594;</div>
+                <?php endif; ?>
             </div>
 
-            <h2>Coaches</h2>
+            <?php if ($is_coach && $team && $team['TeamID'] == $user_team_id): ?>
+                <div class="form-container">
+                    <button onclick="openAddPlayerModal()">Add Player</button>
+                    <form id="deletePlayerForm" method="post">
+                        <select name="delete_player_id" id="playerSelect">
+                            <?php foreach ($players as $player): ?>
+                                <option value="<?php echo htmlspecialchars($player['PlayerID']); ?>"><?php echo htmlspecialchars($player['Name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="submit" id="deletePlayerButton">Delete Player</button>
+                    </form>
+                    <form id="changePlayerPictureForm" method="post" enctype="multipart/form-data">
+                        <select name="change_player_id" id="changePlayerSelect">
+                            <?php foreach ($players as $player): ?>
+                                <option value="<?php echo htmlspecialchars($player['PlayerID']); ?>"><?php echo htmlspecialchars($player['Name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <input type="file" name="change_player_image" required>
+                        <button type="submit">Change Player Picture</button>
+                    </form>
+                </div>
+            <?php endif; ?>
+
+            <h2>Coach</h2>
             <div class="card-container1">
                 <div class="card">
-                    <img src="placeholder.png" alt="Coach Photo">
-                    <h3>Coach Name</h3>
+                    <img src="<?php echo getImagePath($team['CoachImage'] ?? null, 'default_coach_photo.png'); ?>" alt="Coach Photo" id="coachPhoto">
+                    <h3><?php echo htmlspecialchars($team['CoachName'] ?? 'Coach Name'); ?></h3>
                     <p>Coach</p>
                 </div>
-                <!-- Add more coach cards here if needed -->
             </div>
+
+            <?php if ($is_coach && $team && $team['TeamID'] == $user_team_id): ?>
+                <div class="form-container">
+                    <form id="coachPhotoForm" method="post" enctype="multipart/form-data">
+                        <input type="file" name="coach_image" id="coachImageInput">
+                        <button type="submit">Upload Coach Photo</button>
+                        <button type="button" id="deleteCoachPhotoButton">Delete Coach Photo</button>
+                    </form>
+                </div>
+            <?php endif; ?>
         </section>
     </div>
 
@@ -617,6 +903,22 @@
         </div>
     </div>
 
+    <!-- Modal for adding a player -->
+    <div id="addPlayerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddPlayerModal()">&times;</span>
+            <div class="player-info">
+                <h2>Add New Player</h2>
+                <form id="addPlayerForm" method="post" enctype="multipart/form-data">
+                    <input type="text" name="new_player_name" placeholder="Player Name" required>
+                    <input type="text" name="new_player_position" placeholder="Player Position" required>
+                    <input type="file" name="new_player_image" required>
+                    <button type="submit">Add Player</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <footer>
         <div class="footer-container">
             <p>&copy; 2024 Ashesi Sports Insight. All rights reserved.</p>
@@ -624,88 +926,6 @@
     </footer>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const clubId = urlParams.get('club_id');
-
-        const clubs = {
-            1: {
-                name: "Ashesi Eagles",
-                teamPhoto: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/7ff1d189d740524e0a78d2ea604330e44b7ce4c5/1*0WhCt1wGPEBhjHi4_uZxHw.jpg",
-                players: [
-                    { id: "player1", name: "Player 1", position: "Forward", description: "Player 1's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player2", name: "Player 2", position: "Midfielder", description: "Player 2's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player3", name: "Player 3", position: "Defender", description: "Player 3's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player4", name: "Player 4", position: "Goalkeeper", description: "Player 4's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player5", name: "Player 5", position: "Forward", description: "Player 5's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player6", name: "Player 6", position: "Forward", description: "Player 6's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player7", name: "Player 7", position: "Midfielder", description: "Player 7's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player8", name: "Player 8", position: "Defender", description: "Player 8's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player9", name: "Player 9", position: "Goalkeeper", description: "Player 9's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player10", name: "Player 10", position: "Forward", description: "Player 10's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player11", name: "Player 11", position: "Midfielder", description: "Player 11's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player12", name: "Player 12", position: "Forward", description: "Player 12's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player13", name: "Player 13", position: "Midfielder", description: "Player 13's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player14", name: "Player 14", position: "Defender", description: "Player 14's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player15", name: "Player 15", position: "Goalkeeper", description: "Player 15's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player16", name: "Player 16", position: "Forward", description: "Player 16's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player17", name: "Player 17", position: "Forward", description: "Player 17's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player18", name: "Player 18", position: "Midfielder", description: "Player 18's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player19", name: "Player 19", position: "Defender", description: "Player 19's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player20", name: "Player 20", position: "Goalkeeper", description: "Player 20's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player21", name: "Player 21", position: "Forward", description: "Player 21's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                    { id: "player22", name: "Player 22", position: "Midfielder", description: "Player 22's description", image: "https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/f3860df6b8b5fb350f106739b94052947dc3ff85/WhatsApp%20Image%202024-07-25%20at%2021.51.24.jpeg" },
-                ]
-            },
-            2: {
-                name: "Ashesi Falcons",
-                teamPhoto: "https://example.com/team-photo-falcons.jpg",
-                players: [
-                    { id: "player1", name: "Player 1", position: "Forward", description: "Player 1's description", image: "https://example.com/player1.jpg" },
-                    { id: "player2", name: "Player 2", position: "Midfielder", description: "Player 2's description", image: "https://example.com/player2.jpg" },
-                    { id: "player3", name: "Player 3", position: "Defender", description: "Player 3's description", image: "https://example.com/player3.jpg" },
-                    { id: "player4", name: "Player 4", position: "Goalkeeper", description: "Player 4's description", image: "https://example.com/player4.jpg" },
-                    { id: "player5", name: "Player 5", position: "Forward", description: "Player 5's description", image: "https://example.com/player5.jpg" },
-                    { id: "player6", name: "Player 6", position: "Forward", description: "Player 6's description", image: "https://example.com/player6.jpg" },
-                    { id: "player7", name: "Player 7", position: "Midfielder", description: "Player 7's description", image: "https://example.com/player7.jpg" },
-                    { id: "player8", name: "Player 8", position: "Defender", description: "Player 8's description", image: "https://example.com/player8.jpg" },
-                    { id: "player9", name: "Player 9", position: "Goalkeeper", description: "Player 9's description", image: "https://example.com/player9.jpg" },
-                    { id: "player10", name: "Player 10", position: "Forward", description: "Player 10's description", image: "https://example.com/player10.jpg" },
-                    { id: "player11", name: "Player 11", position: "Midfielder", description: "Player 11's description", image: "https://example.com/player11.jpg" },
-                    { id: "player12", name: "Player 12", position: "Forward", description: "Player 12's description", image: "https://example.com/player12.jpg" },
-                    { id: "player13", name: "Player 13", position: "Midfielder", description: "Player 13's description", image: "https://example.com/player13.jpg" },
-                    { id: "player14", name: "Player 14", position: "Defender", description: "Player 14's description", image: "https://example.com/player14.jpg" },
-                    { id: "player15", name: "Player 15", position: "Goalkeeper", description: "Player 15's description", image: "https://example.com/player15.jpg" },
-                    { id: "player16", name: "Player 16", position: "Forward", description: "Player 16's description", image: "https://example.com/player16.jpg" },
-                    { id: "player17", name: "Player 17", position: "Forward", description: "Player 17's description", image: "https://example.com/player17.jpg" },
-                    { id: "player18", name: "Player 18", position: "Midfielder", description: "Player 18's description", image: "https://example.com/player18.jpg" },
-                    { id: "player19", name: "Player 19", position: "Defender", description: "Player 19's description", image: "https://example.com/player19.jpg" },
-                    { id: "player20", name: "Player 20", position: "Goalkeeper", description: "Player 20's description", image: "https://example.com/player20.jpg" },
-                    { id: "player21", name: "Player 21", position: "Forward", description: "Player 21's description", image: "https://example.com/player21.jpg" },
-                    { id: "player22", name: "Player 22", position: "Midfielder", description: "Player 22's description", image: "https://example.com/player22.jpg" },
-                ]
-            },
-            // Add more clubs as needed
-        };
-
-        const club = clubs[clubId];
-        if (club) {
-            document.querySelector('#club-info h2').textContent = club.name;
-            document.querySelector('.team-photo img').src = club.teamPhoto;
-            document.querySelector('.central-logo p').textContent = club.name;
-
-            // Populate players
-            club.players.forEach((player, index) => {
-                const orbitingElement = document.querySelector(`.orbiting-element[data-player-id="player${index + 1}"]`);
-                if (orbitingElement) {
-                    orbitingElement.dataset.playerName = player.name;
-                    orbitingElement.dataset.playerPosition = player.position;
-                    orbitingElement.dataset.playerDescription = player.description;
-                    orbitingElement.querySelector('img').src = player.image;
-                    orbitingElement.querySelector('p').innerHTML = `${player.name}<br>${player.position}`;
-                }
-            });
-        }
-
         const set1 = document.querySelectorAll('.orbiting-element.set1');
         const set2 = document.querySelectorAll('.orbiting-element.set2');
         let showingSet1 = true;
@@ -836,6 +1056,195 @@
                 }
             });
         });
+
+        // Functionality for Add Player Modal
+        const addPlayerModal = document.getElementById("addPlayerModal");
+        const closeAddPlayerModalBtn = document.querySelector("#addPlayerModal .close");
+
+        function openAddPlayerModal() {
+            addPlayerModal.style.display = "block";
+        }
+
+        function closeAddPlayerModal() {
+            addPlayerModal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target == addPlayerModal) {
+                addPlayerModal.style.display = "none";
+            }
+        }
+
+        // Handle form submissions with AJAX to avoid page reloads
+        document.getElementById('teamPhotoForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            if (!document.getElementById('teamImageInput').files.length) {
+                alert('Please choose a file to upload.');
+                return;
+            }
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    document.getElementById('teamPhoto').src = `../../uploads/${data.image}`;
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        document.getElementById('deleteTeamPhotoButton').addEventListener('click', function() {
+            const teamPhoto = document.getElementById('teamPhoto').src;
+            if (teamPhoto.includes('default_team_photo.jpg')) {
+                alert('No team photo to delete.');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('delete_team_image', '1');
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    document.getElementById('teamPhoto').src = 'default_team_photo.jpg';
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        document.getElementById('coachPhotoForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            if (!document.getElementById('coachImageInput').files.length) {
+                alert('Please choose a file to upload.');
+                return;
+            }
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    document.getElementById('coachPhoto').src = `../../uploads/${data.image}`;
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        document.getElementById('deleteCoachPhotoButton').addEventListener('click', function() {
+            const coachPhoto = document.getElementById('coachPhoto').src;
+            if (coachPhoto.includes('default_coach_photo.png')) {
+                alert('No coach photo to delete.');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('delete_coach_image', '1');
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    document.getElementById('coachPhoto').src = 'default_coach_photo.png';
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        document.getElementById('deletePlayerForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            if (confirm('Are you sure you want to delete this player? This action cannot be undone and will delete everything about this player.')) {
+                const formData = new FormData(this);
+                if (!validateSelection('playerSelect', 'No player selected to delete.')) {
+                    return;
+                }
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(data.message);
+                        const playerElement = document.querySelector(`.orbiting-element[data-player-id='${data.player_id}']`);
+                        if (playerElement) {
+                            playerElement.remove();
+                        }
+                        document.querySelector(`#playerSelect option[value='${data.player_id}']`).remove();
+                        document.querySelector(`#changePlayerSelect option[value='${data.player_id}']`).remove();
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        });
+
+        document.getElementById('changePlayerPictureForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            if (!validateSelection('changePlayerSelect', 'No player selected to change picture.')) {
+                return;
+            }
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    const playerElement = document.querySelector(`.orbiting-element[data-player-id='${formData.get('change_player_id')}'] img`);
+                    if (playerElement) {
+                        playerElement.src = `../../uploads/${data.image}`;
+                    }
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        document.getElementById('addPlayerForm').addEventListener('submit', function(event) {
+            // No need for event.preventDefault() here to allow form submission
+        });
+
+        function validateFileInput(inputId, message) {
+            const input = document.getElementById(inputId);
+            if (!input || !input.value) {
+                alert(message);
+                return false;
+            }
+            return true;
+        }
+
+        function validateSelection(selectId, message) {
+            const select = document.getElementById(selectId);
+            if (!select || !select.value) {
+                alert(message);
+                return false;
+            }
+            return true;
+        }
     </script>
 </body>
 </html>

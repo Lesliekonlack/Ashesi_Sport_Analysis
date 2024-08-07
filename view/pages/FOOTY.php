@@ -7,25 +7,89 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Fetch teams from the database
-$teams = [];
-$sql = "SELECT t.TeamID, t.TeamName, t.CoachID, t.TeamGender, t.Logo, c.Name AS CoachName 
+// Fetch club ID from the URL parameter
+$club_id = isset($_GET['club_id']) ? intval($_GET['club_id']) : 0;
+if ($club_id <= 0) {
+    die('Invalid club ID.');
+}
+
+// Fetch club details from the database
+$club = [];
+$sql = "SELECT t.*, c.Name AS CoachName
         FROM teams t
-        JOIN coaches c ON t.CoachID = c.CoachID
-        WHERE t.SportID = (SELECT SportID FROM sports WHERE SportName = 'Football')";
+        LEFT JOIN coaches c ON t.CoachID = c.CoachID
+        WHERE t.TeamID = ?";
 try {
-    $stmt = $conn->query($sql);
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $teams[] = $row;
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([$club_id]);
+    $club = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$club) {
+        die('Club not found.');
     }
 } catch (PDOException $e) {
     echo 'Query failed: ' . $e->getMessage();
     exit();
 }
 
-// Check if user is logged in and is a coach
-$is_coach = isset($_SESSION['coach_id']);
-$user_team_id = $is_coach && isset($_SESSION['team_id']) ? $_SESSION['team_id'] : null;
+// Fetch club members (players)
+$members = [];
+$sql = "SELECT p.* FROM players p WHERE p.TeamID = ?";
+try {
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([$club_id]);
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $members[] = $row;
+    }
+} catch (PDOException $e) {
+    echo 'Query failed: ' . $e->getMessage();
+    exit();
+}
+
+// Fetch matches involving the club
+$matches = [];
+$sql = "SELECT m.*, t1.TeamName AS Team1Name, t2.TeamName AS Team2Name
+        FROM matches m
+        JOIN teams t1 ON m.Team1ID = t1.TeamID
+        JOIN teams t2 ON m.Team2ID = t2.TeamID
+        WHERE m.Team1ID = ? OR m.Team2ID = ?";
+try {
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([$club_id, $club_id]);
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $matches[] = $row;
+    }
+} catch (PDOException $e) {
+    echo 'Query failed: ' . $e->getMessage();
+    exit();
+}
+
+// Fetch aggregated statistics for the club
+$statistics = [];
+$sql = "SELECT * FROM aggregatedstatistics WHERE TeamID = ?";
+try {
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([$club_id]);
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $statistics[] = $row;
+    }
+} catch (PDOException $e) {
+    echo 'Query failed: ' . $e->getMessage();
+    exit();
+}
+
+// Fetch accomplishments for the club
+$accomplishments = [];
+$sql = "SELECT * FROM bigeventawards WHERE TeamID = ?";
+try {
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([$club_id]);
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $accomplishments[] = $row;
+    }
+} catch (PDOException $e) {
+    echo 'Query failed: ' . $e->getMessage();
+    exit();
+}
 
 // Function to get logo path
 function getLogoPath($logo) {
@@ -42,7 +106,7 @@ function getLogoPath($logo) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Football - Ashesi Sports Insight</title>
+    <title><?php echo htmlspecialchars($club['TeamName']); ?> - Ashesi Sports Insight</title>
     <link rel="stylesheet" href="styles.css">
     <style>
         body {
@@ -107,27 +171,6 @@ function getLogoPath($logo) {
             margin-bottom: 20px;
         }
 
-        .toggle-buttons {
-            margin-bottom: 20px;
-        }
-
-        .toggle-buttons button {
-            padding: 10px 20px;
-            margin-right: 10px;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-            color: white;
-        }
-
-        #male-button.active, #female-button.active {
-            background-color: #4B0000;
-        }
-
-        #male-button, #female-button {
-            background-color: #ccc;
-        }
-
         .card-container {
             display: flex;
             flex-wrap: wrap;
@@ -166,37 +209,12 @@ function getLogoPath($logo) {
             color: #4B0000;
             font-size: 1.2rem; /* Smaller font size */
             text-align: center;
-            text-decoration: underline; /* Make club names underlined */
         }
 
         .card p {
             color: #666;
             font-size: 0.9rem; /* Smaller font size */
             text-align: center;
-        }
-
-        .actions {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .upload-logo, .delete-logo {
-            background-color: #1e90ff;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            cursor: pointer;
-            border-radius: 5px;
-            display: inline-block;
-            width: 100%;
-            text-align: center;
-        }
-
-        .delete-logo {
-            background-color: #ff4b4b;
         }
 
         .header-container {
@@ -347,36 +365,6 @@ function getLogoPath($logo) {
             padding: 10px;
         }
     </style>
-    <script>
-        function toggleView(view) {
-            document.getElementById('male-clubs').style.display = view === 'male' ? 'flex' : 'none';
-            document.getElementById('female-clubs').style.display = view === 'female' ? 'flex' : 'none';
-
-            document.getElementById('male-button').classList.toggle('active', view === 'male');
-            document.getElementById('female-button').classList.toggle('active', view === 'female');
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const buttons = document.querySelectorAll('.toggle-buttons button');
-            buttons.forEach(button => {
-                button.addEventListener('click', function() {
-                    buttons.forEach(btn => btn.classList.remove('active'));
-                    this.classList.add('active');
-                });
-            });
-
-            const uploadForms = document.querySelectorAll('.upload-logo-form');
-            uploadForms.forEach(form => {
-                form.addEventListener('submit', function(event) {
-                    const fileInput = this.querySelector('input[type="file"]');
-                    if (!fileInput.files.length) {
-                        event.preventDefault();
-                        alert('Please choose a file to upload.');
-                    }
-                });
-            });
-        });
-    </script>
 </head>
 <body>
     <header>
@@ -440,65 +428,63 @@ function getLogoPath($logo) {
         </ul>
     </div>
     <div class="main-content">
-        <section id="welcome" class="section">
-            <h2>Welcome to the Football Insight of Ashesi</h2>
-            <p>Discover all the latest updates, stats, teams, coaches, clubs, players, and competitions in Ashesi football.</p>
+        <section id="club-details" class="section">
+            <h2><?php echo htmlspecialchars($club['TeamName']); ?></h2>
+            <img src="<?php echo htmlspecialchars(getLogoPath($club['Logo'])); ?>" alt="Club Logo" style="width:150px; height:150px; border-radius: 50%;">
+            <p><strong>Coach:</strong> <?php echo htmlspecialchars($club['CoachName']); ?></p>
+            <p><strong>Win/Loss Record:</strong> <?php echo htmlspecialchars($club['WinLossRecord']); ?></p>
+            <p><strong>Accomplishments:</strong> <?php echo htmlspecialchars($club['Accomplishments']); ?></p>
         </section>
 
-        <section id="clubs" class="section">
-            <h2>Football Clubs at Ashesi</h2>
-            <div class="toggle-buttons">
-                <button id="male-button" onclick="toggleView('male')" class="active">Male</button>
-                <button id="female-button" onclick="toggleView('female')">Female</button>
-            </div>
-
-            <div id="male-clubs" class="card-container">
-                <?php foreach ($teams as $team): ?>
-                    <?php if ($team['TeamGender'] === 'Male'): ?>
-                        <div class="card">
-                            <img src="<?php echo htmlspecialchars(getLogoPath($team['Logo'])); ?>" alt="Team Logo" style="width:100px; height:100px;">
-                            <h3><a href="footballclub.php?team_id=<?php echo $team['TeamID']; ?>"><?php echo htmlspecialchars($team['TeamName']); ?></a></h3>
-                            <p>Coached by <?php echo htmlspecialchars($team['CoachName']); ?></p>
-                            <?php if ($is_coach && $user_team_id == $team['TeamID']): ?>
-                                <div class="actions">
-                                    <form class="upload-logo-form" action="../../action/upload_logo.php" method="POST" enctype="multipart/form-data">
-                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
-                                        <input type="file" name="team_logo">
-                                        <button type="submit" class="upload-logo">Upload Logo</button>
-                                    </form>
-                                    <form action="../../action/delete_logo.php" method="POST">
-                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
-                                        <button type="submit" class="delete-logo">Delete Logo</button>
-                                    </form>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
+        <section id="members" class="section">
+            <h2>Members</h2>
+            <div class="card-container">
+                <?php foreach ($members as $member): ?>
+                    <div class="card">
+                        <h3><?php echo htmlspecialchars($member['Name']); ?></h3>
+                        <p><strong>Position:</strong> <?php echo htmlspecialchars($member['Position']); ?></p>
+                        <p><strong>Injuries:</strong> <?php echo htmlspecialchars($member['Injuries']); ?></p>
+                        <p><strong>Accomplishments:</strong> <?php echo htmlspecialchars($member['Accomplishments']); ?></p>
+                    </div>
                 <?php endforeach; ?>
             </div>
+        </section>
 
-            <div id="female-clubs" class="card-container" style="display:none;">
-                <?php foreach ($teams as $team): ?>
-                    <?php if ($team['TeamGender'] === 'Female'): ?>
-                        <div class="card">
-                            <img src="<?php echo htmlspecialchars(getLogoPath($team['Logo'])); ?>" alt="Team Logo" style="width:100px; height:100px;">
-                            <h3><a href="footballclub.php?team_id=<?php echo $team['TeamID']; ?>"><?php echo htmlspecialchars($team['TeamName']); ?></a></h3>
-                            <p>Coached by <?php echo htmlspecialchars($team['CoachName']); ?></p>
-                            <?php if ($is_coach && $user_team_id == $team['TeamID']): ?>
-                                <div class="actions">
-                                    <form class="upload-logo-form" action="../../action/upload_logo.php" method="POST" enctype="multipart/form-data">
-                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
-                                        <input type="file" name="team_logo">
-                                        <button type="submit" class="upload-logo">Upload Logo</button>
-                                    </form>
-                                    <form action="../../action/delete_logo.php" method="POST">
-                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
-                                        <button type="submit" class="delete-logo">Delete Logo</button>
-                                    </form>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
+        <section id="matches" class="section">
+            <h2>Matches</h2>
+            <div class="card-container">
+                <?php foreach ($matches as $match): ?>
+                    <div class="card">
+                        <h3><?php echo htmlspecialchars($match['Team1Name']); ?> vs <?php echo htmlspecialchars($match['Team2Name']); ?></h3>
+                        <p><strong>Date:</strong> <?php echo htmlspecialchars($match['Date']); ?></p>
+                        <p><strong>Score:</strong> <?php echo htmlspecialchars($match['ScoreTeam1'] . ' - ' . $match['ScoreTeam2']); ?></p>
+                        <p><strong>Injuries Reported:</strong> <?php echo htmlspecialchars($match['InjuriesReported']); ?></p>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </section>
+
+        <section id="statistics" class="section">
+            <h2>Statistics</h2>
+            <div class="card-container">
+                <?php foreach ($statistics as $stat): ?>
+                    <div class="card">
+                        <h3><?php echo htmlspecialchars($stat['MetricName']); ?></h3>
+                        <p><?php echo htmlspecialchars($stat['MetricValue']); ?></p>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </section>
+
+        <section id="accomplishments" class="section">
+            <h2>Accomplishments</h2>
+            <div class="card-container">
+                <?php foreach ($accomplishments as $accomplishment): ?>
+                    <div class="card">
+                        <h3><?php echo htmlspecialchars($accomplishment['AwardName']); ?></h3>
+                        <p><?php echo htmlspecialchars($accomplishment['AwardDescription']); ?></p>
+                        <p><strong>Date:</strong> <?php echo htmlspecialchars($accomplishment['AwardDate']); ?></p>
+                    </div>
                 <?php endforeach; ?>
             </div>
         </section>

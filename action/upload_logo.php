@@ -2,57 +2,82 @@
 session_start();
 include '../settings/connection.php'; // Include your database connection file
 
+$response = ['success' => false, 'message' => ''];
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['team_logo']) && isset($_SESSION['coach_id'])) {
     $coachId = $_SESSION['coach_id'];
     $teamId = $_POST['team_id'];
-    $uploadDir = '/Applications/XAMPP/xamppfiles/htdocs/Ashesi_Sport_Analysis/uploads/';
+    $uploadDir = '../uploads/'; // Change to a relative path
     $imageFileType = strtolower(pathinfo($_FILES['team_logo']['name'], PATHINFO_EXTENSION));
     $targetFile = $uploadDir . $teamId . '.' . $imageFileType; // Save as team_id.extension
+
+    // Create directory if it doesn't exist and ensure permissions are correct
+    if (!file_exists($uploadDir)) {
+        if (!mkdir($uploadDir, 0777, true)) {
+            $response['message'] = 'Failed to create upload directory.';
+            echo json_encode($response);
+            exit();
+        }
+    }
+
+    // Ensure the upload directory is writable
+    if (!is_writable($uploadDir)) {
+        $response['message'] = 'Upload directory is not writable. Please check permissions.';
+        echo json_encode($response);
+        exit();
+    }
+
+    // Set umask to ensure files are created with the correct permissions
+    umask(0022);
 
     // Check if image file is an actual image or fake image
     $check = getimagesize($_FILES['team_logo']['tmp_name']);
     if ($check === false) {
-        die('File is not an image.');
+        $response['message'] = 'File is not an image.';
+        echo json_encode($response);
+        exit();
     }
 
     // Check file size
     if ($_FILES['team_logo']['size'] > 5000000) {
-        die('Sorry, your file is too large.');
+        $response['message'] = 'Sorry, your file is too large.';
+        echo json_encode($response);
+        exit();
     }
 
     // Allow certain file formats
     if ($imageFileType != 'jpg' && $imageFileType != 'jpeg' && $imageFileType != 'png' && $imageFileType != 'gif') {
-        die('Sorry, only JPG, JPEG, PNG & GIF files are allowed.');
+        $response['message'] = 'Sorry, only JPG, JPEG, PNG & GIF files are allowed.';
+        echo json_encode($response);
+        exit();
     }
 
     // Remove old file if it exists
-    if (file_exists($targetFile)) {
-        unlink($targetFile);
+    foreach (glob($uploadDir . $teamId . '.*') as $file) {
+        if (file_exists($file)) {
+            if (!unlink($file)) {
+                $response['message'] = 'Error removing old team logo.';
+                echo json_encode($response);
+                exit();
+            }
+        }
     }
-
-    // Debugging output to understand the issue
-    echo "Temp file: " . $_FILES['team_logo']['tmp_name'] . "<br>";
-    echo "Target file: " . $targetFile . "<br>";
-    echo "File type: " . $imageFileType . "<br>";
-    echo "File size: " . $_FILES['team_logo']['size'] . "<br>";
-    echo "File error: " . $_FILES['team_logo']['error'] . "<br>";
-    echo "Is writable: " . (is_writable($uploadDir) ? "Yes" : "No") . "<br>";
 
     // Move uploaded file to target location
     if (move_uploaded_file($_FILES['team_logo']['tmp_name'], $targetFile)) {
         // Update the team's logo path in the database
         $sql = "UPDATE teams SET Logo = ? WHERE TeamID = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([$targetFile, $teamId]);
+        $stmt->execute([$teamId . '.' . $imageFileType, $teamId]); // Save just the filename
 
-        // Redirect to the football page after successful upload
-        header('Location: ../view/pages/footballsport.php');
-        exit();
+        $response['success'] = true;
+        $response['message'] = 'File uploaded successfully.';
     } else {
-        $error = $_FILES['team_logo']['error'];
-        die("Sorry, there was an error uploading your file. Error code: $error");
+        $response['message'] = 'Sorry, there was an error uploading your file.';
     }
 } else {
-    die('Invalid request.');
+    $response['message'] = 'Invalid request.';
 }
 
+echo json_encode($response);
+?>
