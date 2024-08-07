@@ -12,29 +12,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = $_POST['password'];
 
     try {
-        // Fetch user from the database
-        $stmt = $conn->prepare("SELECT CoachID, Name, PasswordHash FROM coaches WHERE Email = ?");
+        // Fetch user from the database including PasswordHash
+        $stmt = $conn->prepare("SELECT AdminID, Name, PasswordHash FROM admin WHERE Email = ?");
         $stmt->execute([$email]);
 
         if ($stmt->rowCount() > 0) {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            $coach_id = $row['CoachID'];
+            $Admin_id = $row['AdminID'];
             $name = $row['Name'];
             $hashed_password = $row['PasswordHash'];
 
             // Verify password
             if (password_verify($password, $hashed_password)) {
-                $_SESSION['coach_id'] = $coach_id;
-                $_SESSION['coach_name'] = $name;
-
-                // Fetch the team_id associated with this coach
-                $team_stmt = $conn->prepare("SELECT TeamID FROM teams WHERE CoachID = ?");
-                $team_stmt->execute([$coach_id]);
-
-                if ($team_stmt->rowCount() > 0) {
-                    $team_row = $team_stmt->fetch(PDO::FETCH_ASSOC);
-                    $_SESSION['team_id'] = $team_row['TeamID'];
-                }
+                $_SESSION['AdminID'] = $Admin_id;
+                $_SESSION['Name'] = $name;
 
                 header("Location: ../view/pages/homepage.php");
                 exit();
@@ -50,3 +41,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 $conn = null;
 ?>
+

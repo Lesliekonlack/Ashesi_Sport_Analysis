@@ -8,6 +8,18 @@ $coach_team_id = $is_coach && isset($_SESSION['team_id']) ? $_SESSION['team_id']
 $coach_team_name = '';
 $coach_team_logo = '';
 
+// Fetch the team details for the coach's team if available
+if ($is_coach && $coach_team_id) {
+    $coach_team_sql = "SELECT TeamName FROM teams WHERE TeamID = ?";
+    $coach_team_stmt = $conn->prepare($coach_team_sql);
+    $coach_team_stmt->execute([$coach_team_id]);
+    $coach_team_info = $coach_team_stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($coach_team_info) {
+        $coach_team_name = $coach_team_info['TeamName'];
+    }
+}
+
 // Get the team ID from the URL parameter
 $team_id = isset($_GET['team_id']) ? intval($_GET['team_id']) : $coach_team_id;
 $team_name = '';
@@ -54,6 +66,19 @@ $stmt = $conn->prepare($sql);
 $stmt->execute([$team_id, $team_id]);
 $upcoming_matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Fetch past matches for the specified team
+$sql = "SELECT m.MatchID, m.Date, m.Time, m.SportID, m.Team1ID, m.Team2ID, m.HasEnded,
+               t1.TeamName as Team1Name, t2.TeamName as Team2Name, s.SportName
+        FROM matches m
+        JOIN teams t1 ON m.Team1ID = t1.TeamID
+        JOIN teams t2 ON m.Team2ID = t2.TeamID
+        JOIN sports s ON m.SportID = s.SportID
+        WHERE m.HasEnded = 1
+        AND (m.Team1ID = ? OR m.Team2ID = ?)";
+$stmt = $conn->prepare($sql);
+$stmt->execute([$team_id, $team_id]);
+$past_matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 // Fetch teams for the sport
 $teams_sql = "SELECT * FROM teams WHERE SportID = ?";
 $teams_stmt = $conn->prepare($teams_sql);
@@ -92,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $match_id = $_POST['match_id'];
 
     try {
-        $sql = "DELETE FROM matches WHERE MatchID = ?";
+        $sql = "UPDATE matches SET IsDeleted = 1 WHERE MatchID = ?";
         $stmt = $conn->prepare($sql);
         $stmt->execute([$match_id]);
 
@@ -198,37 +223,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Handle update status
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_status' && $can_edit) {
     $match_id = $_POST['match_id'];
-    $current_time = new DateTime("now", new DateTimeZone('Africa/Accra'));
 
-    // Fetch match date and time from database
-    $match_sql = "SELECT Date, Time FROM matches WHERE MatchID = ?";
-    $match_stmt = $conn->prepare($match_sql);
-    $match_stmt->execute([$match_id]);
-    $match_data = $match_stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($match_data) {
-        $match_date_time_str = $match_data['Date'] . ' ' . $match_data['Time'];
-        $match_date_time = DateTime::createFromFormat('Y-m-d H:i:s', $match_date_time_str, new DateTimeZone('Africa/Accra'));
-        $match_end_time = clone $match_date_time;
-        $match_end_time->modify('+90 minutes');
-
-        // Prompt the user for confirmation
-        $prompt_message = "The match started at " . $match_date_time->format('d/m/Y, H:i:s') . " GMT. It is currently " . $current_time->format('d/m/Y, H:i:s') . " GMT. Are you sure you want to mark this match as ended?";
-
-        // Update the HasEnded status without checking if the match has ended
+    try {
         $sql = "UPDATE matches SET HasEnded = 1, IsUpcoming = 0 WHERE MatchID = ?";
         $stmt = $conn->prepare($sql);
         $stmt->execute([$match_id]);
 
         $_SESSION['success_message'] = 'Match status updated successfully.';
-    } else {
-        $_SESSION['error_message'] = 'Invalid match ID.';
+    } catch (PDOException $e) {
+        $_SESSION['error_message'] = 'Error updating match status: ' . $e->getMessage();
     }
 
     header('Location: upcoming_matches.php?team_id=' . $team_id);
     exit();
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -414,7 +422,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             text-align: center;
         }
 
-        .upcoming-matches {
+        .upcoming-matches, .past-matches {
             background-color: #88C057;
             padding: 20px;
             border-radius: 10px;
@@ -422,18 +430,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             margin-bottom: 20px;
         }
 
-        .upcoming-matches h3 {
+        .upcoming-matches h3, .past-matches h3 {
             color: #4B0000;
             font-size: 1.5rem;
             margin-bottom: 10px;
         }
 
-        .upcoming-matches p {
+        .upcoming-matches p, .past-matches p {
             color: #333;
             margin-bottom: 10px;
         }
 
-        .upcoming-matches button {
+        .upcoming-matches button, .past-matches button {
             padding: 10px 20px;
             border: none;
             border-radius: 5px;
@@ -444,7 +452,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             margin-right: 10px;
         }
 
-        .upcoming-matches button:hover {
+        .upcoming-matches button:hover, .past-matches button:hover {
             background-color: #333;
         }
 
@@ -595,6 +603,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         .add-match-form button:hover {
             background-color: #333;
         }
+
+        .toggle-button {
+            background-color: #4B0000;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-button:hover {
+            background-color: #333;
+        }
     </style>
 </head>
 <body>
@@ -728,9 +751,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <?php else: ?>
                         <?php if (strtotime($match['Date'] . ' ' . $match['Time']) <= time()): ?>
                             <button class="update-details-button">Update Match Details</button>
+                            <button class="status-button" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">Status</button>
                         <?php endif; ?>
                         <button class="edit-button">Edit</button>
-                        <button class="status-button" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">Status</button>
                         <form action="upcoming_matches.php" method="post" class="delete-form">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="match_id" value="<?php echo htmlspecialchars($match['MatchID']); ?>">
@@ -791,6 +814,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 <?php endif; ?>
             </div>
         <?php endforeach; ?>
+
+        <button class="toggle-button">Show Past Matches</button>
+
+        <div class="past-matches-section" style="display: none;">
+            <h2>Past Matches</h2>
+            <?php foreach ($past_matches as $match): ?>
+                <div class="past-matches" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">
+                    <div class="match-details">
+                        <h3><?php echo htmlspecialchars($match['Team1Name']) . ' vs ' . htmlspecialchars($match['Team2Name']); ?></h3>
+                        <p>Date: <?php echo htmlspecialchars($match['Date']); ?></p>
+                        <p>Time: <?php echo htmlspecialchars($match['Time']); ?> GMT</p>
+                        <p>Sport: <?php echo htmlspecialchars($match['SportName']); ?></p>
+                        <?php if ($can_edit): ?>
+                            <form action="upcoming_matches.php" method="post" class="delete-form">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="match_id" value="<?php echo htmlspecialchars($match['MatchID']); ?>">
+                                <button type="submit">Delete</button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
     </section>
 </div>
 
@@ -833,27 +880,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             button.addEventListener('click', () => {
                 const matchId = button.getAttribute('data-match-id');
                 const matchElement = button.closest('.upcoming-matches');
-                const matchDate = matchElement.querySelector('p:nth-child(2)').textContent.split(': ')[1];
                 const matchTime = matchElement.querySelector('p:nth-child(3)').textContent.split(': ')[1];
-                const matchDateTimeStr = `${matchDate} ${matchTime}`;
-                const matchDateTime = new Date(matchDateTimeStr + ' GMT');
-                const currentTime = new Date();
+                const currentTime = new Date().toISOString().split('T')[1].split('.')[0];
+                const matchDateTime = new Date();
+                matchDateTime.setHours(parseInt(matchTime.split(':')[0]));
+                matchDateTime.setMinutes(parseInt(matchTime.split(':')[1]));
+                matchDateTime.setSeconds(0);
+
+                const currentTimeDate = new Date();
+                const timeDifference = currentTimeDate - matchDateTime;
                 const ninetyMinutes = 90 * 60 * 1000; // 90 minutes in milliseconds
 
-                // Prompt the user for confirmation
-                if (confirm(`The match started at ${matchDateTime.toISOString().slice(0, 19).replace('T', ' ')} GMT. It is currently ${currentTime.toISOString().slice(0, 19).replace('T', ' ')} GMT. Are you sure you want to mark this match as ended?`)) {
+                const confirmationMessage = The match started at ${matchDateTime.toTimeString().split(' ')[0]} GMT. It is currently ${currentTime}. Are you sure you want to mark this match as ended?;
+
+                if (confirm(confirmationMessage)) {
                     const xhr = new XMLHttpRequest();
                     xhr.open('POST', 'upcoming_matches.php', true);
                     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                     xhr.onreadystatechange = function() {
                         if (xhr.readyState === 4 && xhr.status === 200) {
-                            alert(xhr.responseText);
+                            alert('Match status updated successfully.');
                             location.reload();
                         }
                     };
                     xhr.send('action=update_status&match_id=' + matchId);
                 }
             });
+        });
+
+        document.querySelector('.toggle-button').addEventListener('click', () => {
+            const pastMatchesSection = document.querySelector('.past-matches-section');
+            if (pastMatchesSection.style.display === 'none') {
+                pastMatchesSection.style.display = 'block';
+                document.querySelector('.toggle-button').textContent = 'Hide Past Matches';
+            } else {
+                pastMatchesSection.style.display = 'none';
+                document.querySelector('.toggle-button').textContent = 'Show Past Matches';
+            }
         });
 
         document.querySelector('.details-form form').addEventListener('submit', function(event) {
