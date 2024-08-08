@@ -20,6 +20,18 @@ if ($is_coach && $coach_team_id) {
     }
 }
 
+// Fetch the team details for the coach's team if available
+if ($is_coach && $coach_team_id) {
+    $coach_team_sql = "SELECT TeamName FROM teams WHERE TeamID = ?";
+    $coach_team_stmt = $conn->prepare($coach_team_sql);
+    $coach_team_stmt->execute([$coach_team_id]);
+    $coach_team_info = $coach_team_stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($coach_team_info) {
+        $coach_team_name = $coach_team_info['TeamName'];
+    }
+}
+
 // Get the team ID from the URL parameter
 $team_id = isset($_GET['team_id']) ? intval($_GET['team_id']) : $coach_team_id;
 $team_name = '';
@@ -39,8 +51,8 @@ if ($team_id) {
     }
 }
 
-// Check if the logged-in coach is associated with the team in the URL
-$can_edit = $is_coach && $coach_team_id == $team_id;
+// Check if the logged-in coach is associated with the team in the URL, and if so, make them a viewer
+$can_edit = $is_coach && $coach_team_id !== $team_id;
 
 // Fetch players for the team
 $players_sql = "SELECT * FROM players WHERE TeamID = ?";
@@ -65,6 +77,19 @@ $sql = "SELECT m.MatchID, m.Date, m.Time, m.SportID, m.Team1ID, m.Team2ID, m.IsU
 $stmt = $conn->prepare($sql);
 $stmt->execute([$team_id, $team_id]);
 $upcoming_matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch past matches for the specified team
+$sql = "SELECT m.MatchID, m.Date, m.Time, m.SportID, m.Team1ID, m.Team2ID, m.HasEnded,
+               t1.TeamName as Team1Name, t2.TeamName as Team2Name, s.SportName
+        FROM matches m
+        JOIN teams t1 ON m.Team1ID = t1.TeamID
+        JOIN teams t2 ON m.Team2ID = t2.TeamID
+        JOIN sports s ON m.SportID = s.SportID
+        WHERE m.HasEnded = 1
+        AND (m.Team1ID = ? OR m.Team2ID = ?)";
+$stmt = $conn->prepare($sql);
+$stmt->execute([$team_id, $team_id]);
+$past_matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch past matches for the specified team
 $sql = "SELECT m.MatchID, m.Date, m.Time, m.SportID, m.Team1ID, m.Team2ID, m.HasEnded,
@@ -117,6 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $match_id = $_POST['match_id'];
 
     try {
+        $sql = "UPDATE matches SET IsDeleted = 1 WHERE MatchID = ?";
         $sql = "UPDATE matches SET IsDeleted = 1 WHERE MatchID = ?";
         $stmt = $conn->prepare($sql);
         $stmt->execute([$match_id]);
@@ -225,11 +251,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $match_id = $_POST['match_id'];
 
     try {
+
+    try {
         $sql = "UPDATE matches SET HasEnded = 1, IsUpcoming = 0 WHERE MatchID = ?";
         $stmt = $conn->prepare($sql);
         $stmt->execute([$match_id]);
 
         $_SESSION['success_message'] = 'Match status updated successfully.';
+    } catch (PDOException $e) {
+        $_SESSION['error_message'] = 'Error updating match status: ' . $e->getMessage();
     } catch (PDOException $e) {
         $_SESSION['error_message'] = 'Error updating match status: ' . $e->getMessage();
     }
@@ -423,6 +453,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
 
         .upcoming-matches, .past-matches {
+        .upcoming-matches, .past-matches {
             background-color: #88C057;
             padding: 20px;
             border-radius: 10px;
@@ -431,16 +462,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
 
         .upcoming-matches h3, .past-matches h3 {
+        .upcoming-matches h3, .past-matches h3 {
             color: #4B0000;
             font-size: 1.5rem;
             margin-bottom: 10px;
         }
 
         .upcoming-matches p, .past-matches p {
+        .upcoming-matches p, .past-matches p {
             color: #333;
             margin-bottom: 10px;
         }
 
+        .upcoming-matches button, .past-matches button {
         .upcoming-matches button, .past-matches button {
             padding: 10px 20px;
             border: none;
@@ -452,6 +486,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             margin-right: 10px;
         }
 
+        .upcoming-matches button:hover, .past-matches button:hover {
         .upcoming-matches button:hover, .past-matches button:hover {
             background-color: #333;
         }
@@ -618,6 +653,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         .toggle-button:hover {
             background-color: #333;
         }
+
+        .toggle-button {
+            background-color: #4B0000;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-button:hover {
+            background-color: #333;
+        }
     </style>
 </head>
 <body>
@@ -734,6 +784,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         <?php if (strtotime($match['Date'] . ' ' . $match['Time']) <= time()): ?>
                             <button class="update-details-button">Update Match Details</button>
                             <button class="status-button" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">Status</button>
+                            <button class="status-button" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">Status</button>
                         <?php endif; ?>
                         <button class="edit-button">Edit</button>
                         <form action="upcoming_matches.php" method="post" class="delete-form">
@@ -820,6 +871,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <?php endforeach; ?>
         </div>
 
+
+        <button class="toggle-button">Show Past Matches</button>
+
+        <div class="past-matches-section" style="display: none;">
+            <h2>Past Matches</h2>
+            <?php foreach ($past_matches as $match): ?>
+                <div class="past-matches" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">
+                    <div class="match-details">
+                        <h3><?php echo htmlspecialchars($match['Team1Name']) . ' vs ' . htmlspecialchars($match['Team2Name']); ?></h3>
+                        <p>Date: <?php echo htmlspecialchars($match['Date']); ?></p>
+                        <p>Time: <?php echo htmlspecialchars($match['Time']); ?> GMT</p>
+                        <p>Sport: <?php echo htmlspecialchars($match['SportName']); ?></p>
+                        <?php if ($can_edit): ?>
+                            <form action="upcoming_matches.php" method="post" class="delete-form">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="match_id" value="<?php echo htmlspecialchars($match['MatchID']); ?>">
+                                <button type="submit">Delete</button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
     </section>
 </div>
 
@@ -871,6 +946,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
                 const currentTimeDate = new Date();
                 const timeDifference = currentTimeDate - matchDateTime;
+                const currentTime = new Date().toISOString().split('T')[1].split('.')[0];
+                const matchDateTime = new Date();
+                matchDateTime.setHours(parseInt(matchTime.split(':')[0]));
+                matchDateTime.setMinutes(parseInt(matchTime.split(':')[1]));
+                matchDateTime.setSeconds(0);
+
+                const currentTimeDate = new Date();
+                const timeDifference = currentTimeDate - matchDateTime;
                 const ninetyMinutes = 90 * 60 * 1000; // 90 minutes in milliseconds
 
                 const confirmationMessage = `The match started at ${matchDateTime.toTimeString().split(' ')[0]} GMT. It is currently ${currentTime}. Are you sure you want to mark this match as ended?`;
@@ -882,12 +965,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     xhr.onreadystatechange = function() {
                         if (xhr.readyState === 4 && xhr.status === 200) {
                             alert('Match status updated successfully.');
+                            alert('Match status updated successfully.');
                             location.reload();
                         }
                     };
                     xhr.send('action=update_status&match_id=' + matchId);
                 }
             });
+        });
+
+        document.querySelector('.toggle-button').addEventListener('click', () => {
+            const pastMatchesSection = document.querySelector('.past-matches-section');
+            if (pastMatchesSection.style.display === 'none') {
+                pastMatchesSection.style.display = 'block';
+                document.querySelector('.toggle-button').textContent = 'Hide Past Matches';
+            } else {
+                pastMatchesSection.style.display = 'none';
+                document.querySelector('.toggle-button').textContent = 'Show Past Matches';
+            }
         });
 
         document.querySelector('.toggle-button').addEventListener('click', () => {

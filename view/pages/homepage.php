@@ -1066,7 +1066,6 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                         </ul>
                     </li>
                     <li><a href="#">NEWS</a></li>
-                    <li><a href="#">RANKINGS</a></li>
                     <li>
                         <a href="#">TEAMS & COACHES</a>
                         <ul>
@@ -1082,13 +1081,16 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                         </ul>
                     </li>
                     <li><a href="#">UPCOMING EVENTS</a></li>
+                    <?php if (isset($_SESSION['AdminID'])): ?>
+                        <li><a href="../../admin/admin_homepage.php">ADMIN</a></li>
+                    <?php endif; ?>
                 </ul>
             </nav>
             <div class="nav-icons">
                 <img src="https://cdn-icons-png.flaticon.com/512/54/54481.png" alt="Search Icon" class="search-icon">
-                <?php if (isset($_SESSION['coach_name'])): ?>
+                <?php if (isset($_SESSION['Name'])): ?>
                     <div class="profile-dropdown">
-                        <span class="profile-name" onclick="toggleDropdown()"><?php echo htmlspecialchars($_SESSION['coach_name']); ?></span>
+                        <span class="profile-name" onclick="toggleDropdown()"><?php echo htmlspecialchars($_SESSION['Name']); ?></span>
                         <div id="profileDropdown" class="dropdown-content">
                             <a href="../../action/logout.php">Logout</a>
                         </div>
