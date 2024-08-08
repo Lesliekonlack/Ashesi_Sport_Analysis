@@ -1,7 +1,7 @@
 <?php
 // generate_hash.php
 
-$plaintext_password = 'securepass456'; // Replace with the password you want to hash
+$plaintext_password = 'lol'; // Replace with the password you want to hash
 
 $hashed_password = password_hash($plaintext_password, PASSWORD_DEFAULT);
 echo "Plaintext password: " . $plaintext_password . "\n";

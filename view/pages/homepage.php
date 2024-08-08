@@ -1,5 +1,65 @@
 <?php
 session_start();
+include '../../settings/connection.php';
+
+function getUpcomingMatches($conn) {
+    $sql = "SELECT m.MatchID, m.Date, m.Time, t1.TeamName as Team1Name, t2.TeamName as Team2Name, m.ScoreTeam1, m.ScoreTeam2, m.HasEnded, m.IsUpcoming
+            FROM matches m
+            JOIN teams t1 ON m.Team1ID = t1.TeamID
+            JOIN teams t2 ON m.Team2ID = t2.TeamID
+            WHERE m.IsUpcoming = TRUE OR (m.HasEnded = TRUE AND m.Date >= DATE_SUB(NOW(), INTERVAL 24 HOUR))";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getMatchEvents($conn, $matchID) {
+    $sql = "SELECT e.TeamID, COUNT(*) as Goals
+            FROM match_events e
+            WHERE e.MatchID = :matchID AND e.EventType = 'goal'
+            GROUP BY e.TeamID";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['matchID' => $matchID]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getMatchDetails($conn, $matchID) {
+    $sql = "SELECT e.PlayerName, e.TeamID, e.EventType, e.EventTime
+            FROM match_events e
+            WHERE e.MatchID = :matchID";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['matchID' => $matchID]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function updateMatchStatus($conn) {
+    $sql = "UPDATE matches 
+            SET HasEnded = TRUE, IsUpcoming = FALSE
+            WHERE IsUpcoming = TRUE AND TIMESTAMPDIFF(MINUTE, CONCAT(Date, ' ', Time), NOW()) > 140";
+    $conn->prepare($sql)->execute();
+
+    $sql = "UPDATE matches 
+            SET ScoreTeam1 = (SELECT COUNT(*) FROM match_events WHERE match_events.MatchID = matches.MatchID AND TeamID = matches.Team1ID AND EventType = 'goal'),
+                ScoreTeam2 = (SELECT COUNT(*) FROM match_events WHERE match_events.MatchID = matches.MatchID AND TeamID = matches.Team2ID AND EventType = 'goal')
+            WHERE HasEnded = TRUE";
+    $conn->prepare($sql)->execute();
+}
+
+updateMatchStatus($conn);
+$upcomingMatches = getUpcomingMatches($conn);
+
+if (isset($_GET['matchID']) && isset($_GET['action'])) {
+    $matchID = $_GET['matchID'];
+    if ($_GET['action'] == 'getMatchEvents') {
+        $events = getMatchEvents($conn, $matchID);
+        echo json_encode($events);
+        exit;
+    } elseif ($_GET['action'] == 'getMatchDetails') {
+        $details = getMatchDetails($conn, $matchID);
+        echo json_encode($details);
+        exit;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -95,6 +155,92 @@ session_start();
             });
 
             observer.observe(upcomingAwards);
+
+            // Carousel functionality
+            const carousel = document.querySelector('.carousel-track');
+            const carouselItems = document.querySelectorAll('.match');
+            const prevButton = document.querySelector('.carousel-prev');
+            const nextButton = document.querySelector('.carousel-next');
+            let scrollPosition = 0;
+            const itemWidth = carouselItems[0].offsetWidth + 20; // Width of a match item + gap
+
+            prevButton.addEventListener('click', () => {
+                scrollPosition = Math.max(scrollPosition - itemWidth, 0);
+                carousel.scrollTo({ left: scrollPosition, behavior: 'smooth' });
+            });
+
+            nextButton.addEventListener('click', () => {
+                scrollPosition = Math.min(scrollPosition + itemWidth, (carouselItems.length - 1) * itemWidth);
+                carousel.scrollTo({ left: scrollPosition, behavior: 'smooth' });
+            });
+
+            const getCurrentDateTime = () => {
+                const now = new Date();
+                const date = now.toISOString().split('T')[0];
+                const time = now.toTimeString().split(' ')[0];
+                return { date, time };
+            };
+
+            // Update scores dynamically
+            const updateScores = () => {
+                const { date, time } = getCurrentDateTime();
+
+                carouselItems.forEach(item => {
+                    const matchID = item.getAttribute('data-match-id');
+                    const matchDate = item.getAttribute('data-match-date');
+                    const matchTime = item.getAttribute('data-match-time');
+                    const scoreElement = item.querySelector('.score');
+                    const statusElement = item.querySelector('.status');
+
+                    if (matchDate === date && matchTime <= time) {
+                        statusElement.textContent = 'On-going';
+                        fetch(`?matchID=${matchID}&action=getMatchEvents`)
+                            .then(response => response.json())
+                            .then(data => {
+                                scoreElement.textContent = `${data[0]?.Goals || 0} : ${data[1]?.Goals || 0}`;
+                            });
+                    } else if (matchDate < date || (matchDate === date && matchTime < time)) {
+                        fetch(`?matchID=${matchID}&action=getMatchEvents`)
+                            .then(response => response.json())
+                            .then(data => {
+                                scoreElement.textContent = `${data[0]?.Goals || 0} : ${data[1]?.Goals || 0}`;
+                                statusElement.textContent = 'Ended';
+                            });
+                    } else {
+                        scoreElement.textContent = '0 : 0';
+                        statusElement.textContent = 'Upcoming';
+                    }
+                });
+            };
+
+            updateScores(); // Update scores directly
+
+            // Show match details in a modal
+            carouselItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const matchID = item.getAttribute('data-match-id');
+                    fetch(`?matchID=${matchID}&action=getMatchDetails`)
+                        .then(response => response.json())
+                        .then(data => {
+                            const modalContent = document.querySelector('#matchDetailContent');
+                            modalContent.innerHTML = data.map(event => 
+                                `<p>${event.EventTime} - ${event.PlayerName} (${event.EventType})</p>`
+                            ).join('');
+                            document.querySelector('#matchDetailModal').style.display = 'block';
+                        });
+                });
+            });
+
+            const closeMatchDetail = document.querySelector('.close-match-detail');
+            closeMatchDetail.addEventListener('click', () => {
+                document.querySelector('#matchDetailModal').style.display = 'none';
+            });
+
+            window.addEventListener('click', (event) => {
+                if (event.target == document.querySelector('#matchDetailModal')) {
+                    document.querySelector('#matchDetailModal').style.display = 'none';
+                }
+            });
         });
 
         function openRegisterModal() {
@@ -349,25 +495,68 @@ session_start();
             text-align: center;
         }
 
-        .olympics-container {
+        .carousel-container {
+            position: relative;
             display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 10px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .carousel-track {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            scroll-behavior: smooth;
         }
 
         .match {
             background: white;
-            padding: 10px;
-            border-radius: 5px;
+            padding: 20px;
+            border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            flex: 1;
             text-align: center;
             min-width: 200px;
+            transition: transform 0.3s;
+            flex: 0 0 auto; /* Ensure items don't shrink */
         }
 
         .match p {
             margin: 10px 0;
+            color: #333;
+        }
+
+        .score {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .status {
+            font-size: 1rem;
+            color: #800000;
+        }
+
+        .carousel-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #800000;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .carousel-prev {
+            left: -50px; /* Adjust as needed to avoid overlap */
+        }
+
+        .carousel-next {
+            right: -50px; /* Adjust as needed to avoid overlap */
         }
 
         .top-stories {
@@ -929,22 +1118,34 @@ session_start();
         
         <section class="follow-olympics">
             <h2>UPCOMING MATCHES</h2>
-            <div class="olympics-container">
-                <div class="match">
-                    <p>Men's Olympic Football Tournament Paris 2024<br>First Stage - Group C<br>24 Jul 2024</p>
-                    <h3>UZBEKISTAN vs SPAIN</h3>
-                    <p>13:00</p>
+            <div class="carousel-container">
+                <button class="carousel-arrow carousel-prev">&#9664;</button>
+                <div class="carousel-track">
+                    <?php foreach ($upcomingMatches as $match): ?>
+                    <div class="match" data-match-id="<?php echo $match['MatchID']; ?>" data-match-date="<?php echo $match['Date']; ?>" data-match-time="<?php echo $match['Time']; ?>">
+                        <p><?php echo htmlspecialchars($match['Date']); ?> - <?php echo htmlspecialchars($match['Time']); ?></p>
+                        <h3><?php echo htmlspecialchars($match['Team1Name']); ?> vs <?php echo htmlspecialchars($match['Team2Name']); ?></h3>
+                        <div class="score"><?php echo htmlspecialchars($match['ScoreTeam1']); ?> : <?php echo htmlspecialchars($match['ScoreTeam2']); ?></div>
+                        <div class="status">
+                            <?php 
+                                if ($match['HasEnded']) {
+                                    echo 'Ended';
+                                } else {
+                                    $matchDateTime = new DateTime($match['Date'] . ' ' . $match['Time']);
+                                    $now = new DateTime();
+                                    $interval = $now->diff($matchDateTime);
+                                    if ($interval->days == 0 && $interval->h < 2 && $interval->i < 20) {
+                                        echo 'On-going';
+                                    } else {
+                                        echo 'Upcoming';
+                                    }
+                                }
+                            ?>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
-                <div class="match">
-                    <p>Men's Olympic Football Tournament Paris 2024<br>First Stage - Group B<br>24 Jul 2024</p>
-                    <h3>ARGENTINA vs MOROCCO</h3>
-                    <p>13:00</p>
-                </div>
-                <div class="match">
-                    <p>Men's Olympic Football Tournament Paris 2024<br>First Stage - Group A<br>24 Jul 2024</p>
-                    <h3>GUINEA vs NEW ZEALAND</h3>
-                    <p>15:00</p>
-                </div>
+                <button class="carousel-arrow carousel-next">&#9654;</button>
             </div>
         </section>
         
@@ -1131,6 +1332,19 @@ session_start();
             <p style= "margin-left:-850px;" >What are you looking for?</p>
             <img style= "margin-left:330px; margin-top:15px;" src="https://cdn-icons-png.flaticon.com/512/54/54481.png" alt="Search Icon" class="search-icon">
             <input type="text" placeholder="News, Players, Matches, etc">
+        </div>
+    </div>
+
+    <!-- Match Detail Modal -->
+    <div id="matchDetailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close close-match-detail">&times;</span>
+                <h2>Match Details</h2>
+            </div>
+            <div class="modal-body" id="matchDetailContent">
+                <!-- Match details will be loaded here -->
+            </div>
         </div>
     </div>
 </body>

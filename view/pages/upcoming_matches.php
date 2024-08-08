@@ -630,30 +630,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <nav>
                 <ul>
                     <li>
-                        <a href="#">SPORTS</a>
-                        <ul>
-                            <li><a href="#">Football</a></li>
-                            <li><a href="#">Basketball</a></li>
-                        </ul>
+                        <a style="margin-left: 820px;"href="footballsport.php">Go Back To View All Clubs</a>
+                       
                     </li>
-                    <li><a href="#">NEWS</a></li>
-                    <li><a href="#">RANKINGS</a></li>
-                    <li>
-                        <a href="#">TEAMS & COACHES</a>
-                        <ul>
-                            <li><a href="#">Teams</a></li>
-                            <li><a href="#">Coaches</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="#">PLAYER STATS</a>
-                        <ul>
-                            <li><a href="#">Statistics</a></li>
-                            <li><a href="#">Accomplishments</a></li>
-                        </ul>
-                    </li>
-                    <li><a href="#">UPCOMING EVENTS</a></li>
-                </ul>
+                   
+                    <li><a href="homepage.php">HOME</a></li>
+                    
             </nav>
             <div class="nav-icons">
                 <?php if (isset($_SESSION['coach_id'])): ?>
@@ -684,13 +666,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         <h2><?php echo htmlspecialchars($team_name); ?></h2>
     </div>
         <ul>
-            <li><a href="#stats">Team Stories</a></li>
-            <li><a href="#teams">Team Stats</a></li>
-            <li><a href="#players">Players</a></li>
-            <li><a href="#competitions">Upcoming Matches</a></li>
-            <li><a href="#competitions">Upcoming Competitions</a></li>
-            <li><a href="#competitions">Awards</a></li>
-            <li><a href="#competitions">Fans</a></li>
+        <li><a href="footballclub.php?team_id=<?php echo htmlspecialchars($team_id); ?>"> Team Overview</a></li>
+            <li><a href="teamstories.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Stories</a></li>
+            <li><a href="teamstatistics.php?team_id=<?php echo htmlspecialchars($team['TeamID']); ?>">Team Stats</a></li>
+            <li><a href="players.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Players</a></li>
+            <li><a href="upcoming_matches.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Matches</a></li>
+            <li><a href="competitions.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Competitions</a></li>
+            <li><a href="awards.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Awards</a></li>
         </ul>
     </div>
     <div class="main-content">

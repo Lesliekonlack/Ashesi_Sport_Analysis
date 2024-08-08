@@ -385,35 +385,7 @@ function getLogoPath($logo) {
                 <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/246c29d2a7c8bff15a8f6206d9f7084c6018fa5a/Untitled_Artwork%204.png" alt="Ashesi Sports Insight Logo" class="logo">
                 <div class="site-title">Ashesi Sports Insight</div>
             </div>
-            <nav>
-                <ul>
-                    <li>
-                        <a href="#">SPORTS</a>
-                        <ul>
-                            <li><a href="footballsport.php">Football</a></li>
-                            <li><a href="basketballsport.php">Basketball</a></li>
-                        </ul>
-                    </li>
-                    <li> <a href="homepage.php">HOME</a></li>
-                    <li><a href="#">NEWS</a></li>
-                    <li><a href="#">RANKINGS</a></li>
-                    <li>
-                        <a href="#">TEAMS & COACHES</a>
-                        <ul>
-                            <li><a href="#">Teams</a></li>
-                            <li><a href="#">Coaches</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="#">PLAYER STATS</a>
-                        <ul>
-                            <li><a href="#">Statistics</a></li>
-                            <li><a href="#">Accomplishments</a></li>
-                        </ul>
-                    </li>
-                    <li><a href="#">UPCOMING EVENTS</a></li>
-                </ul>
-            </nav>
+         
             <div class="nav-icons">
                 <img src="https://cdn-icons-png.flaticon.com/512/54/54481.png" alt="Search Icon" class="search-icon">
                 <?php if (isset($_SESSION['coach_name'])): ?>
@@ -431,18 +403,14 @@ function getLogoPath($logo) {
     <div class="sidebar">
         <h2>Football</h2>
         <ul>
-            <li><a href="#stats">Stats</a></li>
-            <li><a href="#teams">Teams</a></li>
-            <li><a href="#coaches">Coaches</a></li>
-            <li><a href="#clubs">Clubs</a></li>
-            <li><a href="#players">Players</a></li>
-            <li><a href="#competitions">Competitions</a></li>
+            <li><a href="homepage.php">HOME</a></li>
+            <li><a href="basketballsport.php">Basketball Clubs</a></li>
         </ul>
     </div>
     <div class="main-content">
         <section id="welcome" class="section">
             <h2>Welcome to the Football Insight of Ashesi</h2>
-            <p>Discover all the latest updates, stats, teams, coaches, clubs, players, and competitions in Ashesi football.</p>
+            <p>Discover all the latest updates on your favorite football teams at Ashesi.</p>
         </section>
 
         <section id="clubs" class="section">
