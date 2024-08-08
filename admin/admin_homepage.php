@@ -1,31 +1,11 @@
 <?php
 session_start();
-include '../../settings/connection.php'; // Include your database connection file
+include '../settings/connection.php'; // Include your database connection file
 
 // Enable error reporting
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-
-// Fetch teams from the database
-$teams = [];
-$sql = "SELECT t.TeamID, t.TeamName, t.CoachID, t.TeamGender, t.Logo, c.Name AS CoachName 
-        FROM teams t
-        JOIN coaches c ON t.CoachID = c.CoachID
-        WHERE t.SportID = (SELECT SportID FROM sports WHERE SportName = 'Football')";
-try {
-    $stmt = $conn->query($sql);
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $teams[] = $row;
-    }
-} catch (PDOException $e) {
-    echo 'Query failed: ' . $e->getMessage();
-    exit();
-}
-
-// Check if user is logged in and is a coach
-$is_coach = isset($_SESSION['coach_id']);
-$user_team_id = $is_coach && isset($_SESSION['team_id']) ? $_SESSION['team_id'] : null;
 
 // Function to get logo path
 function getLogoPath($logo) {
@@ -120,12 +100,12 @@ function getLogoPath($logo) {
             color: white;
         }
 
-        #male-button.active, #female-button.active {
+        #matches.active, #new_highlight.active {
             background-color: #4B0000;
         }
 
-        #male-button, #female-button {
-            background-color: #ccc;
+        #matches, #v {
+            background-color: #4B0001;
         }
 
         .card-container {
@@ -395,8 +375,7 @@ function getLogoPath($logo) {
                         </ul>
                     </li>
                     <li> <a href="homepage.php">HOME</a></li>
-                    <li><a href="#">NEWS</a></li>
-                    <li><a href="#">RANKINGS</a></li>
+        
                     <li>
                         <a href="#">TEAMS & COACHES</a>
                         <ul>
@@ -405,7 +384,7 @@ function getLogoPath($logo) {
                         </ul>
                     </li>
                     <li>
-                        <a href="#">PLAYER STATS</a>
+                      
                         <ul>
                             <li><a href="#">Statistics</a></li>
                             <li><a href="#">Accomplishments</a></li>
@@ -431,9 +410,9 @@ function getLogoPath($logo) {
     <div class="sidebar">
         <h2>Football</h2>
         <ul>
-            <li><a href="#stats">Stats</a></li>
-            <li><a href="#teams">Teams</a></li>
-            <li><a href="#coaches">Coaches</a></li>
+            <li><a href="matches.php">upload matches</a></li>
+            <li><a href="#teams">Add New Story</a></li>
+            <li><a href="#coaches">Add New event </a></li>
             <li><a href="#clubs">Clubs</a></li>
             <li><a href="#players">Players</a></li>
             <li><a href="#competitions">Competitions</a></li>
@@ -446,67 +425,12 @@ function getLogoPath($logo) {
         </section>
 
         <section id="clubs" class="section">
-            <h2>Football Clubs at Ashesi</h2>
+            <h2>Make New updates</h2>
             <div class="toggle-buttons">
-                <button id="male-button" onclick="toggleView('male')" class="active">Male</button>
-                <button id="female-button" onclick="toggleView('female')">Female</button>
+                <button id="matches" onclick="toggleView('male')" class="active">Matches</button>
+                <button id="new_highlight" onclick="toggleView('female')">New highlight</button>
             </div>
 
-            <div id="male-clubs" class="card-container">
-                <?php foreach ($teams as $team): ?>
-                    <?php if ($team['TeamGender'] === 'M'): ?>
-                        <div class="card">
-                            <img src="<?php echo htmlspecialchars(getLogoPath($team['Logo'])); ?>" alt="Team Logo" style="width:100px; height:100px;">
-                            <h3><a href="footballclub.php?team_id=<?php echo $team['TeamID']; ?>"><?php echo htmlspecialchars($team['TeamName']); ?></a></h3>
-                            <p>Coached by <?php echo htmlspecialchars($team['CoachName']); ?></p>
-                            <?php if ($is_coach && $user_team_id == $team['TeamID']): ?>
-                                <div class="actions">
-                                    <form class="upload-logo-form" action="../../action/upload_logo.php" method="POST" enctype="multipart/form-data">
-                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
-                                        <input type="file" name="team_logo">
-                                        <button type="submit" class="upload-logo">Upload Logo</button>
-                                    </form>
-                                    <form action="../../action/delete_logo.php" method="POST">
-                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
-                                        <button type="submit" class="delete-logo">Delete Logo</button>
-                                    </form>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-            </div>
-
-            <div id="female-clubs" class="card-container" style="display:none;">
-                <?php foreach ($teams as $team): ?>
-                    <?php if ($team['TeamGender'] === 'F'): ?>
-                        <div class="card">
-                            <img src="<?php echo htmlspecialchars(getLogoPath($team['Logo'])); ?>" alt="Team Logo" style="width:100px; height:100px;">
-                            <h3><a href="footballclub.php?team_id=<?php echo $team['TeamID']; ?>"><?php echo htmlspecialchars($team['TeamName']); ?></a></h3>
-                            <p>Coached by <?php echo htmlspecialchars($team['CoachName']); ?></p>
-                            <?php if ($is_coach && $user_team_id == $team['TeamID']): ?>
-                                <div class="actions">
-                                    <form class="upload-logo-form" action="../../action/upload_logo.php" method="POST" enctype="multipart/form-data">
-                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
-                                        <input type="file" name="team_logo">
-                                        <button type="submit" class="upload-logo">Upload Logo</button>
-                                    </form>
-                                    <form action="../../action/delete_logo.php" method="POST">
-                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
-                                        <button type="submit" class="delete-logo">Delete Logo</button>
-                                    </form>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-            </div>
-        </section>
-    </div>
-    <footer>
-        <div class="footer-container">
-            <p>&copy; 2024 Ashesi Sports Insight. All rights reserved.</p>
-        </div>
-    </footer>
+            
 </body>
 </html>

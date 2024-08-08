@@ -893,7 +893,7 @@ session_start();
                     </li>
                     <li><a href="#">UPCOMING EVENTS</a></li>
                     <?php if (isset($_SESSION['AdminID'])): ?>
-                        <li><a href="#">ADMIN</a></li>
+                        <li><a href="../../admin/admin_homepage.php">ADMIN</a></li>
                     <?php endif; ?>
                 </ul>
             </nav>
