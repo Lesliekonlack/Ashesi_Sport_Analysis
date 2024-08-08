@@ -54,7 +54,7 @@ $goalkeepers = array_filter($players, function($player) {
 });
 
 // Fetch upcoming matches for the specified team
-$sql = "SELECT m.MatchID, m.Date, m.Time, m.SportID, m.Team1ID, m.Team2ID, m.IsUpcoming, m.NotificationSent, 
+$sql = "SELECT m.MatchID, m.Date, m.Time, m.SportID, m.Team1ID, m.Team2ID, m.IsUpcoming, m.NotificationSent, m.Goalscorers, m.CleanSheets, m.Assists,
                t1.TeamName as Team1Name, t2.TeamName as Team2Name, s.SportName
         FROM matches m
         JOIN teams t1 ON m.Team1ID = t1.TeamID
@@ -627,34 +627,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/246c29d2a7c8bff15a8f6206d9f7084c6018fa5a/Untitled_Artwork%204.png" alt="Ashesi Sports Insight Logo" class="logo">
                 <div class="site-title">Ashesi Sports Insight</div>
             </div>
-            <nav>
-                <ul>
-                    <li>
-                        <a href="#">SPORTS</a>
-                        <ul>
-                            <li><a href="#">Football</a></li>
-                            <li><a href="#">Basketball</a></li>
-                        </ul>
-                    </li>
-                    <li><a href="#">NEWS</a></li>
-                    <li><a href="#">RANKINGS</a></li>
-                    <li>
-                        <a href="#">TEAMS & COACHES</a>
-                        <ul>
-                            <li><a href="#">Teams</a></li>
-                            <li><a href="#">Coaches</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="#">PLAYER STATS</a>
-                        <ul>
-                            <li><a href="#">Statistics</a></li>
-                            <li><a href="#">Accomplishments</a></li>
-                        </ul>
-                    </li>
-                    <li><a href="#">UPCOMING EVENTS</a></li>
-                </ul>
-            </nav>
             <div class="nav-icons">
                 <?php if (isset($_SESSION['coach_id'])): ?>
                     <?php if ($is_coach && $coach_team_id): ?>
@@ -683,14 +655,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <img src="<?php echo htmlspecialchars($team_logo); ?>" alt="Team Logo">
             <h2><?php echo htmlspecialchars($team_name); ?></h2>
         </div>
-        <ul>
-            <li><a href="#stats">Team Stories</a></li>
-            <li><a href="#teams">Team Stats</a></li>
-            <li><a href="#players">Players</a></li>
-            <li><a href="#competitions">Upcoming Matches</a></li>
-            <li><a href="#competitions">Upcoming Competitions</a></li>
-            <li><a href="#competitions">Awards</a></li>
-            <li><a href="#competitions">Fans</a></li>
+         <ul>
+        <li><a href="footballclub.php?team_id=<?php echo htmlspecialchars($team_id); ?>"> Team Overview</a></li>
+            <li><a href="teamstories.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Stories</a></li>
+            <li><a href="teamstatistics.php?team_id=<?php echo htmlspecialchars($team['TeamID']); ?>">Team Stats</a></li>
+            <li><a href="players.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Players</a></li>
+            <li><a href="competitions.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Competitions</a></li>
+            <li><a href="awards.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Awards</a></li>
         </ul>
     </div>
     <div class="main-content">

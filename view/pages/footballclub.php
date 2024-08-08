@@ -69,26 +69,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $response = [];
 
     // Add new player
-    if (isset($_POST['new_player_name']) && $team_id == $user_team_id) {
-        $player_name = $_POST['new_player_name'];
-        $player_position = $_POST['new_player_position'];
-        $uploadedFileName = handleFileUpload('new_player_image', '../../uploads/');
+    // Add new player
+if (isset($_POST['new_player_name']) && $team_id == $user_team_id) {
+    $player_name = $_POST['new_player_name'];
+    $player_position = $_POST['new_player_position'];
+    $player_age = $_POST['new_player_age'];
+    $player_height = $_POST['new_player_height'];
+    $player_nationality = $_POST['new_player_nationality'];
+    $uploadedFileName = handleFileUpload('new_player_image', '../../uploads/');
 
-        $sql = "INSERT INTO players (Name, Position, Image, TeamID, SportID) VALUES (?, ?, ?, ?, ?)";
-        try {
-            $stmt = $conn->prepare($sql);
-            $stmt->execute([$player_name, $player_position, $uploadedFileName, $team_id, $team['SportID']]);
-            // Redirect to the same page to reload it
-            header("Location: " . $_SERVER['REQUEST_URI']);
-            exit();
-        } catch (PDOException $e) {
-            $response['status'] = 'error';
-            $response['message'] = 'Insert failed: ' . $e->getMessage();
+    $sql = "INSERT INTO players (Name, Position, Age, Height, Nationality, Image, TeamID, SportID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    try {
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$player_name, $player_position, $player_age, $player_height, $player_nationality, $uploadedFileName, $team_id, $team['SportID']]);
+
+        $player_id = $conn->lastInsertId();
+        if (isset($_POST['new_player_trophies']) && is_array($_POST['new_player_trophies'])) {
+            foreach ($_POST['new_player_trophies'] as $trophy) {
+                if (!empty($trophy)) {
+                    list($year, $name) = explode('-', $trophy, 2);
+                    $sql = "INSERT INTO trophies (PlayerID, Year, Name) VALUES (?, ?, ?)";
+                    $stmt = $conn->prepare($sql);
+                    $stmt->execute([$player_id, $year, $name]);
+                }
+            }
         }
 
-        echo json_encode($response);
+        // Redirect to the same page to reload it
+        header("Location: " . $_SERVER['REQUEST_URI']);
         exit();
+    } catch (PDOException $e) {
+        $response['status'] = 'error';
+        $response['message'] = 'Insert failed: ' . $e->getMessage();
     }
+
+    echo json_encode($response);
+    exit();
+}
+
+    
 
     // Change player picture
     if (isset($_POST['change_player_id']) && $team_id == $user_team_id) {
@@ -733,38 +752,19 @@ function getImagePath($image, $defaultImage) {
 <body>
     <header>
         <div class="header-container">
-            <div class="logo-container">
+        <div class="logo-container">
                 <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/246c29d2a7c8bff15a8f6206d9f7084c6018fa5a/Untitled_Artwork%204.png" alt="Ashesi Sports Insight Logo" class="logo">
                 <div class="site-title">Ashesi Sports Insight</div>
-            </div>
-            <nav>
+                <nav>
                 <ul>
                     <li>
-                        <a href="#">SPORTS</a>
-                        <ul>
-                            <li><a href="#">Football</a></li>
-                            <li><a href="#">Basketball</a></li>
-                        </ul>
+                        <a style="margin-left: 820px;"href="footballsport.php">Go Back To View All Clubs</a>
+                       
                     </li>
-                    <li><a href="#">NEWS</a></li>
-                    <li><a href="#">RANKINGS</a></li>
-                    <li>
-                        <a href="#">TEAMS & COACHES</a>
-                        <ul>
-                            <li><a href="#">Teams</a></li>
-                            <li><a href="#">Coaches</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="#">PLAYER STATS</a>
-                        <ul>
-                            <li><a href="#">Statistics</a></li>
-                            <li><a href="#">Accomplishments</a></li>
-                        </ul>
-                    </li>
-                    <li><a href="#">UPCOMING EVENTS</a></li>
-                </ul>
-            </nav>
+                   
+                    <li><a href="homepage.php">HOME</a></li>  
+                </nav>
+            </div>
             <div class="nav-icons">
                 <?php if (isset($_SESSION['coach_id'])): ?>
                     <?php if ($is_coach && $user_team_id == $team_id): ?>
@@ -794,14 +794,12 @@ function getImagePath($image, $defaultImage) {
             <h2><?php echo htmlspecialchars($team['TeamName'] ?? 'Football'); ?></h2>
         </div>
         <ul>
-            <li><a href="#stats">Team Stories</a></li>
-            <li><a href="#teams">Team Stats</a></li>
-            <li><a href="#players">Players</a></li>
-            <li><a href="upcoming_matches.php?team_id=<?php echo htmlspecialchars($team['TeamID']); ?>">Upcoming Matches</a></li>
-            <li><a href="#competitioans">Upcoming Competitions</a></li>
-            <li><a href="#competitioans">Awards</a></li>
-            <li><a href="#competitioans">Fans</a></li>
-
+            <li><a href="teamstories.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Stories</a></li>
+            <li><a href="teamstatistics.php?team_id=<?php echo htmlspecialchars($team['TeamID']); ?>">Team Stats</a></li>
+            <li><a href="players.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Players</a></li>
+            <li><a href="upcoming_matches.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Matches</a></li>
+            <li><a href="competitions.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Competitions</a></li>
+            <li><a href="awards.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Awards</a></li>
         </ul>
     </div>
     <div class="main-content">
@@ -904,26 +902,69 @@ function getImagePath($image, $defaultImage) {
     </div>
 
     <!-- Modal for adding a player -->
-    <div id="addPlayerModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeAddPlayerModal()">&times;</span>
-            <div class="player-info">
-                <h2>Add New Player</h2>
-                <form id="addPlayerForm" method="post" enctype="multipart/form-data">
-                    <input type="text" name="new_player_name" placeholder="Player Name" required>
-                    <input type="text" name="new_player_position" placeholder="Player Position" required>
-                    <input type="file" name="new_player_image" required>
-                    <button type="submit">Add Player</button>
-                </form>
-            </div>
+<!-- Modal for adding a player -->
+<div id="addPlayerModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeAddPlayerModal()">&times;</span>
+        <div class="player-info">
+            <h2>Add New Player</h2>
+            <form id="addPlayerForm" method="post" enctype="multipart/form-data">
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <input type="text" name="new_player_name" placeholder="Player Name" required style="flex: 1; min-width: 200px;">
+                    <input type="text" name="new_player_position" placeholder="Player Position" required style="flex: 1; min-width: 200px;">
+                    <input type="number" name="new_player_age" placeholder="Player Age" required style="flex: 1; min-width: 100px;">
+                    <input type="text" name="new_player_height" placeholder="Player Height" required style="flex: 1; min-width: 100px;">
+                    <input type="text" name="new_player_nationality" placeholder="Player Country Of Origin" required style="flex: 1; min-width: 200px;">
+                </div>
+                <h3 style="margin-top: 20px;">Trophies</h3>
+                <div id="trophiesContainer">
+                    <input type="text" name="new_player_trophies[]" placeholder="Trophies (format: year-name)" style="width: calc(100% - 100px);">
+                </div>
+                <button type="button" onclick="addTrophyField()" style="margin-top: 10px;">Add Trophy</button>
+                <br>
+                <input type="file" name="new_player_image" required style="margin-top: 20px;">
+                <br>
+                <button type="submit" style="margin-top: 20px;">Add Player</button>
+            </form>
         </div>
     </div>
+</div>
 
     <footer>
         <div class="footer-container">
             <p>&copy; 2024 Ashesi Sports Insight. All rights reserved.</p>
         </div>
     </footer>
+    <script>
+    function addTrophyField() {
+        var container = document.getElementById('trophiesContainer');
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.name = 'new_player_trophies[]';
+        input.placeholder = 'Trophies (format: year-name)';
+        input.style = 'width: calc(100% - 100px); margin-top: 10px;';
+        container.appendChild(input);
+    }
+</script>
+    <script>
+    document.getElementById('addTrophyButton').addEventListener('click', function() {
+        const trophyContainer = document.getElementById('trophiesContainer');
+        const newTrophyField = document.createElement('div');
+        newTrophyField.classList.add('trophy-field');
+        newTrophyField.innerHTML = `
+            <input type="text" name="new_player_trophies[]" placeholder="Trophies (format: number-year-trophy_name)">
+            <button type="button" class="removeTrophyButton">Remove</button>
+        `;
+        trophyContainer.appendChild(newTrophyField);
+    });
+
+    document.getElementById('trophiesContainer').addEventListener('click', function(event) {
+        if (event.target && event.target.classList.contains('removeTrophyButton')) {
+            event.target.parentNode.remove();
+        }
+    });
+</script>
+
 
     <script>
         const set1 = document.querySelectorAll('.orbiting-element.set1');
@@ -984,22 +1025,22 @@ function getImagePath($image, $defaultImage) {
 
                 innerElements1.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepInner1 * index;
-                    element.style.transform = `rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg)`;
+                    element.style.transform = rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg);
                 });
 
                 outerElements1.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepOuter1 * index;
-                    element.style.transform = `rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg)`;
+                    element.style.transform = rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg);
                 });
 
                 innerElements2.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepInner2 * index;
-                    element.style.transform = `rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg)`;
+                    element.style.transform = rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg);
                 });
 
                 outerElements2.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepOuter2 * index;
-                    element.style.transform = `rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg)`;
+                    element.style.transform = rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg);
                 });
             }
         });
@@ -1049,7 +1090,7 @@ function getImagePath($image, $defaultImage) {
                 const playerId = player.getAttribute('data-player-id'); // Unique identifier for the player
 
                 // Set the correct URL path for the "See More" link
-                const playerMoreLink = `http://localhost/Ashesi_Sport_Analysis/view/pages/seemore.php?player=${playerId}`;
+                const playerMoreLink = http://localhost/Ashesi_Sport_Analysis/view/pages/seemore.php?player=${playerId};
 
                 if ((showingSet1 && player.classList.contains('set1')) || (!showingSet1 && player.classList.contains('set2'))) {
                     openModal(playerName, playerPosition, playerDescription, playerImage, playerMoreLink);
@@ -1091,7 +1132,7 @@ function getImagePath($image, $defaultImage) {
             .then(data => {
                 if (data.status === 'success') {
                     alert(data.message);
-                    document.getElementById('teamPhoto').src = `../../uploads/${data.image}`;
+                    document.getElementById('teamPhoto').src = ../../uploads/${data.image};
                 } else {
                     alert(data.message);
                 }
@@ -1138,7 +1179,7 @@ function getImagePath($image, $defaultImage) {
             .then(data => {
                 if (data.status === 'success') {
                     alert(data.message);
-                    document.getElementById('coachPhoto').src = `../../uploads/${data.image}`;
+                    document.getElementById('coachPhoto').src = ../../uploads/${data.image};
                 } else {
                     alert(data.message);
                 }
@@ -1185,12 +1226,12 @@ function getImagePath($image, $defaultImage) {
                 .then(data => {
                     if (data.status === 'success') {
                         alert(data.message);
-                        const playerElement = document.querySelector(`.orbiting-element[data-player-id='${data.player_id}']`);
+                        const playerElement = document.querySelector(.orbiting-element[data-player-id='${data.player_id}']);
                         if (playerElement) {
                             playerElement.remove();
                         }
-                        document.querySelector(`#playerSelect option[value='${data.player_id}']`).remove();
-                        document.querySelector(`#changePlayerSelect option[value='${data.player_id}']`).remove();
+                        document.querySelector(#playerSelect option[value='${data.player_id}']).remove();
+                        document.querySelector(#changePlayerSelect option[value='${data.player_id}']).remove();
                     } else {
                         alert(data.message);
                     }
@@ -1213,9 +1254,9 @@ function getImagePath($image, $defaultImage) {
             .then(data => {
                 if (data.status === 'success') {
                     alert(data.message);
-                    const playerElement = document.querySelector(`.orbiting-element[data-player-id='${formData.get('change_player_id')}'] img`);
+                    const playerElement = document.querySelector(.orbiting-element[data-player-id='${formData.get('change_player_id')}'] img);
                     if (playerElement) {
-                        playerElement.src = `../../uploads/${data.image}`;
+                        playerElement.src = ../../uploads/${data.image};
                     }
                 } else {
                     alert(data.message);

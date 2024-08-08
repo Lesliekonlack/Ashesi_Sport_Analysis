@@ -49,6 +49,35 @@ $stmt = $conn->prepare($sql);
 $stmt->execute();
 $past_matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Fetch team names and sport names for each past match
+foreach ($past_matches as &$match) {
+    $team1_id = $match['Team1ID'];
+    $team2_id = $match['Team2ID'];
+    $sport_id = $match['SportID'];
+
+    // Fetch team names
+    $team_sql = "SELECT TeamID, TeamName FROM teams WHERE TeamID IN (?, ?)";
+    $team_stmt = $conn->prepare($team_sql);
+    $team_stmt->execute([$team1_id, $team2_id]);
+    $teams = $team_stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Map team names
+    foreach ($teams as $team) {
+        if ($team['TeamID'] == $team1_id) {
+            $match['Team1Name'] = $team['TeamName'];
+        } elseif ($team['TeamID'] == $team2_id) {
+            $match['Team2Name'] = $team['TeamName'];
+        }
+    }
+
+    // Fetch sport name
+    $sport_sql = "SELECT SportName FROM sports WHERE SportID = ?";
+    $sport_stmt = $conn->prepare($sport_sql);
+    $sport_stmt->execute([$sport_id]);
+    $sport_row = $sport_stmt->fetch(PDO::FETCH_ASSOC);
+    $match['SportName'] = $sport_row['SportName'] ?? 'Unknown Sport';
+}
+
 // Handle delete match
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete' && $can_edit) {
     $match_id = $_POST['match_id'];
@@ -629,16 +658,15 @@ $Teams = $teams_stmt->fetchAll(PDO::FETCH_ASSOC);
             <h2><?php echo htmlspecialchars($team_name); ?></h2>
         </div>
         <ul>
-            <li><a href="#stats">Team Stories</a></li>
-            <li><a href="#teams">Team Stats</a></li>
+        <li><a href="matches.php">upload matches</a></li>
+            <li><a href="#teams">Add New Story</a></li>
+            <li><a href="#coaches">Add New event </a></li>
+            <li><a href="#clubs">Live matches</a></li>
             <li><a href="#players">Players</a></li>
-            <li><a href="#competitions">Upcoming Matches</a></li>
-            <li><a href="#competitions">Upcoming Competitions</a></li>
-            <li><a href="#competitions">Awards</a></li>
-            <li><a href="#competitions">Fans</a></li>
+            <li><a href="#competitions">Competitions</a></li>
         </ul>
     </div>
-    <div class="main-content">
+    <di class="main-content">
     <section id="upcoming-matches" class="section">
         <h2>Upcoming Matches</h2>
 
@@ -696,30 +724,30 @@ $Teams = $teams_stmt->fetchAll(PDO::FETCH_ASSOC);
         <h1>Upcoming Matches</h1>
         <?php foreach ($upcoming_matches as $match): ?>
             <div class="upcoming-matches" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">
-                < class="match-details">
+                <class="match-details">
                     <h3><?php echo htmlspecialchars($match['Team1Name']) . ' vs ' . htmlspecialchars($match['Team2Name']); ?></h3>
                     <p>Date: <?php echo htmlspecialchars($match['Date']); ?></p>
                     <p>Time: <?php echo htmlspecialchars($match['time']); ?> GMT</p>
                     <p>Sport: <?php echo htmlspecialchars($match['SportName']); ?></p>
                     
-                    <button>Notify Me</button>
-                    
-                    <?php if (strtotime($match['Date'] . ' ' . $match['time']) <= time()): ?>
-                        <button class="update-details-button">Update Match Details</button>
-                        <button class="status-button" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">Status</button>
+                    <?php if (!$can_edit): ?>
+                        <button>Notify Me</button>
+                    <?php else: ?>
+                        <?php if (strtotime($match['Date'] . ' ' . $match['time']) <= time()): ?>
+                            <button class="update-details-button">Update Match Details</button>
+                            <button class="status-button" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">Status</button>
+                        <?php endif; ?>
+                        <button class="edit-button">Edit</button>
+                        <form action="upcoming_matches.php" method="post" class="delete-form">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="match_id" value="<?php echo htmlspecialchars($match['MatchID']); ?>">
+                            <button type="submit">Delete</button>
+                        </form>
                     <?php endif; ?>
-                    <button class="edit-button">Edit</button>
-                    <form action="upcoming_matches.php" method="post" class="delete-form">
-                        <input type="hidden" name="action" value="delete">
-                        <input type="hidden" name="match_id" value="<?php echo htmlspecialchars($match['MatchID']); ?>">
-                        <button type="submit">Delete</button>
-                    </form>
-                   
-      
-                </div>
-                <?php if (isset($_SESSION['AdminID'])): ?>
+                </div>   
+            
                     <div class="edit-form">
-                        <form action="upcoming_matches.php" method="post">
+                        <form action="../action/edit_match.php" method="post">
                             <input type="hidden" name="action" value="edit">
                             <input type="hidden" name="match_id" value="<?php echo htmlspecialchars($match['MatchID']); ?>">
                             <label for="date_<?php echo htmlspecialchars($match['MatchID']); ?>">Date:</label>
@@ -767,32 +795,33 @@ $Teams = $teams_stmt->fetchAll(PDO::FETCH_ASSOC);
                             <button type="button" class="cancel-details-button">Cancel</button>
                         </form>
                     </div>
-                <?php endif; ?>
+               
             </div>
         <?php endforeach; ?>
 
         <button class="toggle-button">Show Past Matches</button>
 
         <div class="past-matches-section" style="display: none;">
-            <h2>Past Matches</h2>
-            <?php foreach ($past_matches as $match): ?>
-                <div class="past-matches" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">
-                    <div class="match-details">
-                        <h3><?php echo htmlspecialchars($match['Team1Name']) . ' vs ' . htmlspecialchars($match['Team2Name']); ?></h3>
-                        <p>Date: <?php echo htmlspecialchars($match['Date']); ?></p>
-                        <p>Time: <?php echo htmlspecialchars($match['Time']); ?> GMT</p>
-                        <p>Sport: <?php echo htmlspecialchars($match['SportName']); ?></p>
-                        <?php if (isset($_SESSION['AdminID'])): ?>
-                            <form action="upcoming_matches.php" method="post" class="delete-form">
-                                <input type="hidden" name="action" value="delete">
-                                <input type="hidden" name="match_id" value="<?php echo htmlspecialchars($match['MatchID']); ?>">
-                                <button type="submit">Delete</button>
-                            </form>
-                        <?php endif; ?>
-                    </div>
+        <h2>Past Matches</h2>
+        <?php foreach ($past_matches as $match): ?>
+            <div class="past-matches" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">
+                <div class="match-details">
+                    <h3><?php echo htmlspecialchars($match['Team1Name']) . ' vs ' . htmlspecialchars($match['Team2Name']); ?></h3>
+                    <p>Date: <?php echo htmlspecialchars($match['Date']); ?></p>
+                    <p>Time: <?php echo htmlspecialchars($match['Time']); ?> GMT</p>
+                    <p>Sport: <?php echo htmlspecialchars($match['SportName']); ?></p>
+                    <p>Score: <?php echo htmlspecialchars($match['ScoreTeam1']) . ' - ' . htmlspecialchars($match['ScoreTeam2']); ?></p>
+                    <?php if (isset($_SESSION['AdminID'])): ?>
+                        <form action="upcoming_matches.php" method="post" class="delete-form">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="match_id" value="<?php echo htmlspecialchars($match['MatchID']); ?>">
+                            <button type="submit">Delete</button>
+                        </form>
+                    <?php endif; ?>
                 </div>
-            <?php endforeach; ?>
-        </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
 
     </section>
 </div>

@@ -23,6 +23,7 @@ function getLogoPath($logo) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Football - Ashesi Sports Insight</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="styles.css">
     <style>
         body {
@@ -413,7 +414,7 @@ function getLogoPath($logo) {
             <li><a href="matches.php">upload matches</a></li>
             <li><a href="#teams">Add New Story</a></li>
             <li><a href="#coaches">Add New event </a></li>
-            <li><a href="#clubs">Clubs</a></li>
+            <li><a href="#clubs">Live matches</a></li>
             <li><a href="#players">Players</a></li>
             <li><a href="#competitions">Competitions</a></li>
         </ul>
@@ -425,11 +426,27 @@ function getLogoPath($logo) {
         </section>
 
         <section id="clubs" class="section">
-            <h2>Make New updates</h2>
+            <h2>Make New Updates</h2>
             <div class="toggle-buttons">
-                <button id="matches" onclick="toggleView('male')" class="active">Matches</button>
-                <button id="new_highlight" onclick="toggleView('female')">New highlight</button>
+                <button id="matches" onclick="toggleView('matches')" class="active">Matches</button>
+                <button id="new_highlight" onclick="toggleView('new_highlight')">New Highlight</button>
             </div>
+            <div id="matches-section" class="content-section">
+                <!-- Content for Matches will go here -->
+            </div>
+            <div id="new-highlight-section" class="content-section" style="display: none;">
+                <form action="homepage.php" method="post" enctype="multipart/form-data">
+                    <label for="picture">Upload Picture:</label>
+                    <input type="file" id="picture" name="picture" class="swal2-input" accept="image/*"><br>
+                    <label for="headline">Headline:</label>
+                    <input type="text" id="headline" name="headline" class="swal2-input" placeholder="Enter headline"><br>
+                    <label for="summary">Summary:</label>
+                    <textarea id="summary" name="summary" class="swal2-textarea" placeholder="Enter summary"></textarea>
+                    <button type="submit">Submit</button>
+                    <button type="button" class="cancel-button" onclick="cancelEdit()">Cancel</button>
+                </form>
+            </div>
+        </section>
 
             
 </body>
