@@ -17,24 +17,6 @@ $stmt->execute([$playerId]);
 $player = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$player) {
-session_start();
-include '../../settings/connection.php';
-
-// Fetch player ID from the URL
-$playerId = isset($_GET['player']) ? intval($_GET['player']) : null;
-
-if (!$playerId) {
-    echo "Player not found.";
-    exit;
-}
-
-// Fetch player details from the database
-$sql = "SELECT p.*, t.TeamName, t.Logo, t.TeamGender, t.TeamID FROM players p LEFT JOIN teams t ON p.TeamID = t.TeamID WHERE p.PlayerID = ?";
-$stmt = $conn->prepare($sql);
-$stmt->execute([$playerId]);
-$player = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$player) {
     echo "Player not found.";
     exit;
 }
@@ -123,7 +105,6 @@ function getImagePath($image, $defaultImage) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($player['Name']); ?> - Player Details</title>
-    <title><?php echo htmlspecialchars($player['Name']); ?> - Player Details</title>
     <link rel="stylesheet" href="styles.css">
     <style>
         body {
@@ -131,12 +112,8 @@ function getImagePath($image, $defaultImage) {
             font-family: Arial, sans-serif;
             background-color: white;
             padding-top: 30px;
-            font-family: Arial, sans-serif;
-            background-color: white;
-            padding-top: 30px;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
             min-height: 100vh;
         }
 
@@ -386,151 +363,6 @@ function getImagePath($image, $defaultImage) {
             color: #FFD700;
         }
 
-        .sidebar {
-            width: 200px;
-            background-color: #4B0000;
-            padding: 20px;
-            height: 100vh;
-            position: fixed;
-            top: 80px;
-            left: 0;
-            overflow-y: auto;
-        }
-
-        .sidebar .team-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .sidebar .team-info img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-        }
-
-        .sidebar h2 {
-            color: white;
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-        }
-
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .sidebar ul li {
-            margin-bottom: 15px;
-        }
-
-        .sidebar ul li a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .sidebar ul li a:hover {
-            text-decoration: underline;
-        }
-
-        .main-content {
-            margin-left: 270px;
-            padding: 20px;
-            flex: 1;
-        }
-
-        .section {
-            margin-bottom: 40px;
-        }
-
-        .section h2 {
-            color: #4B0000;
-            font-size: 2rem;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .player-image {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .player-image img {
-            width: 100%;
-            max-width: 400px;
-            height: auto;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .player-image img:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
-        }
-
-        .player-details {
-            background: linear-gradient(135deg, #4B0000, #388E3C);
-            border-radius: 10px;
-            padding: 30px;
-            color: white;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            animation: fadeIn 1s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .player-info h1 {
-            margin-top: 0;
-            font-size: 2.5rem;
-            color: #FFD700;
-        }
-
-        .player-info p {
-            font-size: 1.2rem;
-            margin: 10px 0;
-            color: #f0f0f0;
-        }
-
-        .player-info p strong {
-            color: #fff;
-        }
-
-        .player-stats {
-            margin-top: 30px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-around;
-            background-color: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 10px;
-        }
-
-        .stat-item {
-            width: 30%;
-            margin-bottom: 20px;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            text-align: left;
-        }
-
-        .stat-item p {
-            margin: 0;
-            color: #fff;
-            font-size: 1.1rem;
-        }
-
-        .stat-item p strong {
-            color: #FFD700;
-        }
-
         footer {
             background-color: #4B0000;
             color: white;
@@ -574,20 +406,7 @@ function getImagePath($image, $defaultImage) {
             <h2><?php echo htmlspecialchars($player['TeamName']); ?></h2>
         </div>
         <ul>
-        <div class="team-info">
-            <img src="<?php echo getImagePath($player['Logo'], 'default_logo.png'); ?>" alt="Team Logo">
-            <h2><?php echo htmlspecialchars($player['TeamName']); ?></h2>
-        </div>
         <ul>
-        <ul>
-            <li><a href="footballclub.php?team_id=<?php echo htmlspecialchars($team_id); ?>"> Team Overview</a></li>
-            <li><a href="teamstories.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Stories</a></li>
-            <li><a href="teamstatistics.php?team_id=<?php echo htmlspecialchars($team['TeamID']); ?>">Team Stats</a></li>
-            <li><a href="players.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Players</a></li>
-            <li><a href="upcoming_matches.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Matches</a></li>
-            <li><a href="competitions.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Competitions</a></li>
-            <li><a href="awards.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Awards</a></li>
-        </ul>
             <li><a href="footballclub.php?team_id=<?php echo htmlspecialchars($team_id); ?>"> Team Overview</a></li>
             <li><a href="teamstories.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Stories</a></li>
             <li><a href="teamstatistics.php?team_id=<?php echo htmlspecialchars($team['TeamID']); ?>">Team Stats</a></li>
@@ -600,15 +419,11 @@ function getImagePath($image, $defaultImage) {
     </div>
     <div style = "margin-top:20px;" class="main-content">
         <h1 style="text-align:center; color: #4B0000;"><?php echo htmlspecialchars($player['Name']); ?></h1>
-    <div style = "margin-top:20px;" class="main-content">
-        <h1 style="text-align:center; color: #4B0000;"><?php echo htmlspecialchars($player['Name']); ?></h1>
         <div class="player-image">
-            <img src="<?php echo getImagePath($player['Image'], 'default_player_photo.jpg'); ?>" alt="<?php echo htmlspecialchars($player['Name']); ?>">
             <img src="<?php echo getImagePath($player['Image'], 'default_player_photo.jpg'); ?>" alt="<?php echo htmlspecialchars($player['Name']); ?>">
         </div>
         <section class="section player-details">
             <div class="player-info">
-                <p><strong>Description:</strong> <?php echo $description; ?></p>
                 <p><strong>Description:</strong> <?php echo $description; ?></p>
             </div>
             <div class="player-stats">
@@ -625,33 +440,16 @@ function getImagePath($image, $defaultImage) {
                     </div>
                 <?php endif; ?>
                
-                <?php if (stripos($player['Position'], 'goalkeeper') !== false || stripos($player['Position'], 'keeper') !== false): ?>
-                    <div class="stat-item">
-                        <p><strong>Clean Sheets:</strong> <?php echo htmlspecialchars($cleanSheets); ?></p>
-                    </div>
-                <?php else: ?>
-                    <div class="stat-item">
-                        <p><strong>Goals:</strong> <?php echo htmlspecialchars($goals); ?></p>
-                    </div>
-                    <div class="stat-item">
-                        <p><strong>Assists:</strong> <?php echo htmlspecialchars($assists); ?></p>
-                    </div>
-                <?php endif; ?>
-               
                 <div class="stat-item">
-                    <p><strong>Age:</strong> <?php echo htmlspecialchars($player['Age']); ?></p>
                     <p><strong>Age:</strong> <?php echo htmlspecialchars($player['Age']); ?></p>
                 </div>
                 <div class="stat-item">
                     <p><strong>Height:</strong> <?php echo htmlspecialchars($player['Height']); ?></p>
-                    <p><strong>Height:</strong> <?php echo htmlspecialchars($player['Height']); ?></p>
                 </div>
                 <div class="stat-item">
                     <p><strong>Nationality:</strong> <?php echo htmlspecialchars($player['Nationality']); ?></p>
-                    <p><strong>Nationality:</strong> <?php echo htmlspecialchars($player['Nationality']); ?></p>
                 </div>
                 <div class="stat-item">
-                    <p><strong>Trophies:</strong> <?php echo htmlspecialchars($trophyCount); ?></p>
                     <p><strong>Trophies:</strong> <?php echo htmlspecialchars($trophyCount); ?></p>
                 </div>
             </div>
@@ -662,3 +460,4 @@ function getImagePath($image, $defaultImage) {
     </footer>
 </body>
 </html>
+

@@ -752,7 +752,7 @@ function getImagePath($image, $defaultImage) {
 <body>
     <header>
         <div class="header-container">
-        <div class="logo-container">
+            <div class="logo-container">
                 <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/246c29d2a7c8bff15a8f6206d9f7084c6018fa5a/Untitled_Artwork%204.png" alt="Ashesi Sports Insight Logo" class="logo">
                 <div class="site-title">Ashesi Sports Insight</div>
                 <nav>
@@ -1025,22 +1025,22 @@ function getImagePath($image, $defaultImage) {
 
                 innerElements1.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepInner1 * index;
-                    element.style.transform = rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg);
+                    element.style.transform = `rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg)`;
                 });
 
                 outerElements1.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepOuter1 * index;
-                    element.style.transform = rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg);
+                    element.style.transform = `rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg)`;
                 });
 
                 innerElements2.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepInner2 * index;
-                    element.style.transform = rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg);
+                    element.style.transform = `rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg)`;
                 });
 
                 outerElements2.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepOuter2 * index;
-                    element.style.transform = rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg);
+                    element.style.transform = `rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg)`;
                 });
             }
         });
@@ -1092,7 +1092,7 @@ function getImagePath($image, $defaultImage) {
                 const playerId = player.getAttribute('data-player-id'); // Unique identifier for the player
 
                 // Set the correct URL path for the "See More" link
-                const playerMoreLink = http://localhost/Ashesi_Sport_Analysis/view/pages/seemore.php?player=${playerId};
+                const playerMoreLink = `http://localhost/Ashesi_Sport_Analysis/view/pages/seemore.php?player=${playerId}`;
 
                 if ((showingSet1 && player.classList.contains('set1')) || (!showingSet1 && player.classList.contains('set2'))) {
                     openModal(playerName, playerPosition, playerDescription, playerImage, playerMoreLink);
@@ -1134,7 +1134,7 @@ function getImagePath($image, $defaultImage) {
             .then(data => {
                 if (data.status === 'success') {
                     alert(data.message);
-                    document.getElementById('teamPhoto').src = ../../uploads/${data.image};
+                    document.getElementById('teamPhoto').src = `../../uploads/${data.image}`;
                 } else {
                     alert(data.message);
                 }
@@ -1181,7 +1181,7 @@ function getImagePath($image, $defaultImage) {
             .then(data => {
                 if (data.status === 'success') {
                     alert(data.message);
-                    document.getElementById('coachPhoto').src = ../../uploads/${data.image};
+                    document.getElementById('coachPhoto').src = `../../uploads/${data.image}`;
                 } else {
                     alert(data.message);
                 }
@@ -1228,12 +1228,12 @@ function getImagePath($image, $defaultImage) {
                 .then(data => {
                     if (data.status === 'success') {
                         alert(data.message);
-                        const playerElement = document.querySelector(.orbiting-element[data-player-id='${data.player_id}']);
+                        const playerElement = document.querySelector(`.orbiting-element[data-player-id='${data.player_id}']`);
                         if (playerElement) {
                             playerElement.remove();
                         }
-                        document.querySelector(#playerSelect option[value='${data.player_id}']).remove();
-                        document.querySelector(#changePlayerSelect option[value='${data.player_id}']).remove();
+                        document.querySelector(`#playerSelect option[value='${data.player_id}']`).remove();
+                        document.querySelector(`#changePlayerSelect option[value='${data.player_id}']`).remove();
                     } else {
                         alert(data.message);
                     }
@@ -1256,9 +1256,9 @@ function getImagePath($image, $defaultImage) {
             .then(data => {
                 if (data.status === 'success') {
                     alert(data.message);
-                    const playerElement = document.querySelector(.orbiting-element[data-player-id='${formData.get('change_player_id')}'] img);
+                    const playerElement = document.querySelector(`.orbiting-element[data-player-id='${formData.get('change_player_id')}'] img`);
                     if (playerElement) {
-                        playerElement.src = ../../uploads/${data.image};
+                        playerElement.src = `../../uploads/${data.image}`;
                     }
                 } else {
                     alert(data.message);
@@ -1291,3 +1291,4 @@ function getImagePath($image, $defaultImage) {
     </script>
 </body>
 </html>
+
