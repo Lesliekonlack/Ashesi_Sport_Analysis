@@ -2,88 +2,12 @@
 session_start();
 include 'settings/connection.php';
 
-
-// Fetch tournaments
-$tournaments_sql = "SELECT * FROM tournaments";
-$tournaments_stmt = $conn->prepare($tournaments_sql);
-$tournaments_stmt->execute();
-$tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-
-include 'settings/connection.php';
-
-// Fetch upcoming matches
-$sql = "SELECT m.MatchID, m.Date, m.Time, m.SportID, m.Team1ID, m.Team2ID, m.TournamentID, 
-               t1.TeamName as Team1Name, t2.TeamName as Team2Name, s.SportName, 
-               tr.Name as TournamentName
-        FROM matches m
-        JOIN teams t1 ON m.Team1ID = t1.TeamID
-        JOIN teams t2 ON m.Team2ID = t2.TeamID
-        JOIN sports s ON m.SportID = s.SportID
-        LEFT JOIN tournaments tr ON m.TournamentID = tr.TournamentID
-        WHERE m.IsUpcoming = TRUE
-        ORDER BY m.Date ASC
-        LIMIT 5"; // Limit to the number of matches you want to display
-$stmt = $conn->prepare($sql);
-$stmt->execute();
-$upcoming_matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Fetch matches (regardless of status) along with tournament names if available
-$sql = "SELECT m.MatchID, m.Date, m.Time, t1.TeamName as Team1Name, t2.TeamName as Team2Name, s.SportName, 
-               tr.Name as TournamentName
-        FROM matches m
-        JOIN teams t1 ON m.Team1ID = t1.TeamID
-        JOIN teams t2 ON m.Team2ID = t2.TeamID
-        JOIN sports s ON m.SportID = s.SportID
-        LEFT JOIN tournaments tr ON m.TournamentID = tr.TournamentID
-        ORDER BY m.Date ASC";
-$stmt = $conn->prepare($sql);
-$stmt->execute();
-$matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-
-
-// Fetch five most recent stories
-$stories_sql = "SELECT * FROM stories ORDER BY DatePosted DESC LIMIT 5";
-$stories_stmt = $conn->prepare($stories_sql);
-$stories_stmt->execute();
-$recent_stories = $stories_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Function to get image path, ensuring it exists
-function getImagePath($imagePath) {
-    $defaultImagePath = '../../uploads/default_image.png'; // Replace with your default image path
-    if ($imagePath && file_exists(__DIR__ . '/../../' . $imagePath)) {
-        return '../../' . $imagePath;
-    }
-    return $defaultImagePath;
-}
-
-// Fetch upcoming awards
-$awards_sql = "SELECT e.*, s.SportName FROM events e
-               JOIN sports s ON e.SportID = s.SportID
-               WHERE e.EventDate >= CURDATE()
-               ORDER BY e.EventDate ASC";
-$awards_stmt = $conn->prepare($awards_sql);
-$awards_stmt->execute();
-$upcoming_awards = $awards_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-
-$tournaments_sql = "SELECT t.Name, s.SportName, t.StartDate, t.EndDate FROM tournaments t 
-                    JOIN sports s ON t.SportID = s.SportID
-                    WHERE t.StartDate >= CURDATE()
-                    ORDER BY t.StartDate ASC";
-$tournaments_stmt = $conn->prepare($tournaments_sql);
-$tournaments_stmt->execute();
-$upcoming_tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-
-function getMatches($conn) {
-    $sql = "SELECT m.MatchID, m.Date, m.Time, t1.TeamName as Team1Name, t2.TeamName as Team2Name, m.HasEnded, m.IsUpcoming
+function getUpcomingMatches($conn) {
+    $sql = "SELECT m.MatchID, m.Date, m.Time, t1.TeamName as Team1Name, t2.TeamName as Team2Name, m.ScoreTeam1, m.ScoreTeam2, m.HasEnded, m.IsUpcoming
             FROM matches m
             JOIN teams t1 ON m.Team1ID = t1.TeamID
             JOIN teams t2 ON m.Team2ID = t2.TeamID
-            WHERE (m.HasEnded = 0 AND m.IsUpcoming = 1)
-               OR (m.HasEnded = 1 AND TIMESTAMPDIFF(HOUR, CONCAT(m.Date, ' ', m.Time), NOW()) <= 24)";
+            WHERE m.IsUpcoming = TRUE OR (m.HasEnded = TRUE AND m.Date >= DATE_SUB(NOW(), INTERVAL 24 HOUR))";
     $stmt = $conn->prepare($sql);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -108,43 +32,21 @@ function getMatchDetails($conn, $matchID) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function updateMatchStatus($conn, $matchID, $scoreTeam1, $scoreTeam2) {
-    $sql = "UPDATE matches SET HasEnded = 1, IsUpcoming = 0, ScoreTeam1 = :scoreTeam1, ScoreTeam2 = :scoreTeam2 WHERE MatchID = :matchID";
-    $stmt = $conn->prepare($sql);
-    $stmt->execute(['scoreTeam1' => $scoreTeam1, 'scoreTeam2' => $scoreTeam2, 'matchID' => $matchID]);
+function updateMatchStatus($conn) {
+    $sql = "UPDATE matches 
+            SET HasEnded = TRUE, IsUpcoming = FALSE
+            WHERE IsUpcoming = TRUE AND TIMESTAMPDIFF(MINUTE, CONCAT(Date, ' ', Time), NOW()) > 140";
+    $conn->prepare($sql)->execute();
+
+    $sql = "UPDATE matches 
+            SET ScoreTeam1 = (SELECT COUNT(*) FROM match_events WHERE match_events.MatchID = matches.MatchID AND TeamID = matches.Team1ID AND EventType = 'goal'),
+                ScoreTeam2 = (SELECT COUNT(*) FROM match_events WHERE match_events.MatchID = matches.MatchID AND TeamID = matches.Team2ID AND EventType = 'goal')
+            WHERE HasEnded = TRUE";
+    $conn->prepare($sql)->execute();
 }
 
-function checkAndUpdateMatchStatus($conn) {
-    $sql = "SELECT MatchID, Date, Time FROM matches WHERE HasEnded = 0 AND IsUpcoming = 1";
-    $stmt = $conn->prepare($sql);
-    $stmt->execute();
-    $matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $currentTime = new DateTime();
-
-    foreach ($matches as $match) {
-        $matchTime = new DateTime($match['Date'] . ' ' . $match['Time']);
-        $interval = $currentTime->diff($matchTime);
-        $minutesPassed = ($interval->days * 24 * 60) + ($interval->h * 60) + $interval->i;
-
-        if ($minutesPassed >= 140) {
-            // Update the match status to ended and calculate the final score
-            $events = getMatchEvents($conn, $match['MatchID']);
-            $scoreTeam1 = 0;
-            $scoreTeam2 = 0;
-            foreach ($events as $event) {
-                if ($event['TeamID'] == 1) {
-                    $scoreTeam1 = $event['Goals'];
-                } else {
-                    $scoreTeam2 = $event['Goals'];
-                }
-            }
-            updateMatchStatus($conn, $match['MatchID'], $scoreTeam1, $scoreTeam2);
-        }
-    }
-}
-
-checkAndUpdateMatchStatus($conn);
-$upcomingMatches = getMatches($conn);
+updateMatchStatus($conn);
+$upcomingMatches = getUpcomingMatches($conn);
 
 if (isset($_GET['matchID']) && isset($_GET['action'])) {
     $matchID = $_GET['matchID'];
@@ -290,29 +192,28 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                     const scoreElement = item.querySelector('.score');
                     const statusElement = item.querySelector('.status');
 
-                    fetch(`?matchID=${matchID}&action=getMatchEvents`)
-                        .then(response => response.json())
-                        .then(data => {
-                            const team1Goals = data[0]?.Goals || 0;
-                            const team2Goals = data[1]?.Goals || 0;
-                            scoreElement.textContent = `${team1Goals} : ${team2Goals}`;
-
-                            const matchDateTime = new Date(`${matchDate}T${matchTime}`);
-                            const now = new Date();
-                            const timeDifference = Math.floor((now - matchDateTime) / 1000 / 60); // in minutes
-
-                            if (timeDifference >= 140) {
+                    if (matchDate === date && matchTime <= time) {
+                        statusElement.textContent = 'On-going';
+                        fetch(`?matchID=${matchID}&action=getMatchEvents`)
+                            .then(response => response.json())
+                            .then(data => {
+                                scoreElement.textContent = `${data[0]?.Goals || 0} : ${data[1]?.Goals || 0}`;
+                            });
+                    } else if (matchDate < date || (matchDate === date && matchTime < time)) {
+                        fetch(`?matchID=${matchID}&action=getMatchEvents`)
+                            .then(response => response.json())
+                            .then(data => {
+                                scoreElement.textContent = `${data[0]?.Goals || 0} : ${data[1]?.Goals || 0}`;
                                 statusElement.textContent = 'Ended';
-                            } else if (timeDifference >= 0 && timeDifference < 140) {
-                                statusElement.textContent = 'On-going';
-                            } else {
-                                statusElement.textContent = 'Upcoming';
-                            }
-                        });
+                            });
+                    } else {
+                        scoreElement.textContent = '0 : 0';
+                        statusElement.textContent = 'Upcoming';
+                    }
                 });
             };
 
-            updateScores();
+            updateScores(); // Update scores directly
 
             // Show match details in a modal
             carouselItems.forEach(item => {
@@ -1096,9 +997,7 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
             flex-wrap: wrap;
             gap: 20px;
             justify-content: center;
-
         }
-        
 
         .tournament-card {
             background: white;
@@ -1162,7 +1061,7 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                     <li>
                         <a href="#">SPORTS</a>
                         <ul>
-                             <li><a href="../view/pagesfootballsport.php">Football</a></li>
+                             <li><a href="footballsport.php">Football</a></li>
                             <li><a href="basketballsport.php">Basketball</a></li>
                         </ul>
                     </li>
@@ -1218,102 +1117,115 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
         </section>
         
         <section class="follow-olympics">
-            <h2>MATCHES</h2>
+            <h2>UPCOMING MATCHES</h2>
             <div class="carousel-container">
                 <button class="carousel-arrow carousel-prev">&#9664;</button>
                 <div class="carousel-track">
-                    <?php foreach ($matches as $match): ?>
+                    <?php foreach ($upcomingMatches as $match): ?>
                     <div class="match" data-match-id="<?php echo $match['MatchID']; ?>" data-match-date="<?php echo $match['Date']; ?>" data-match-time="<?php echo $match['Time']; ?>">
                         <p><?php echo htmlspecialchars($match['Date']); ?> - <?php echo htmlspecialchars($match['Time']); ?></p>
                         <h3><?php echo htmlspecialchars($match['Team1Name']); ?> vs <?php echo htmlspecialchars($match['Team2Name']); ?></h3>
-                        <?php if (!empty($match['TournamentName'])): ?>
-                            <p><?php echo htmlspecialchars($match['TournamentName']); ?></p>
-                        <?php else: ?>
-                            <p>Friendly Match</p>
-                        <?php endif; ?>
-                        <div class="score">0 : 0</div>
-                        <div class="status"><?php echo $match['HasEnded'] ? 'Ended' : 'On-going'; ?></div>
+                        <div class="score"><?php echo htmlspecialchars($match['ScoreTeam1']); ?> : <?php echo htmlspecialchars($match['ScoreTeam2']); ?></div>
+                        <div class="status">
+                            <?php 
+                                if ($match['HasEnded']) {
+                                    echo 'Ended';
+                                } else {
+                                    $matchDateTime = new DateTime($match['Date'] . ' ' . $match['Time']);
+                                    $now = new DateTime();
+                                    $interval = $now->diff($matchDateTime);
+                                    if ($interval->days == 0 && $interval->h < 2 && $interval->i < 20) {
+                                        echo 'On-going';
+                                    } else {
+                                        echo 'Upcoming';
+                                    }
+                                }
+                            ?>
+                        </div>
                     </div>
                     <?php endforeach; ?>
                 </div>
                 <button class="carousel-arrow carousel-next">&#9654;</button>
             </div>
         </section>
-       <!-- Top Stories Section -->
-       <section class="top-stories">
+        
+        <section class="top-stories">
             <h2>TOP STORIES</h2>
-            <a href="all_stories.php" class="see-more">See More</a> <!-- Link to the page showing all stories -->
+            <a href="#" class="see-more">See More</a>
             <div class="stories-container">
-                <?php if (!empty($recent_stories)): ?>
-                    <div class="story main-story">
-                        <a href="story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[0]['StoryID']); ?>">
-                            <img src="<?php echo htmlspecialchars(getImagePath($recent_stories[0]['ImagePath'])); ?>" alt="<?php echo htmlspecialchars($recent_stories[0]['Title']); ?>">
-                            <h3><?php echo htmlspecialchars($recent_stories[0]['Title']); ?></h3>
-                        </a>
+                <div class="story main-story">
+                    <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/80ce81b9f1d08f25148101e1b5579d0e00c86019/ashesifootimage.jpeg" alt="Story Image 1">
+                    <h3>Norchoyev: Uzbekistan have a huge potential</h3>
+                </div>
+                <div class="side-stories">
+                    <div class="story side-story">
+                        <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/8fb8611d9708745bc19df059ebc2b5b92c6755f3/BESTPLAYER.jpeg" alt="Story Image 2">
+                        <h3>Mexico entrust 2026 project to Aguirre and Marquez</h3>
                     </div>
-                    <div class="side-stories">
-                        <?php for ($i = 1; $i < count($recent_stories); $i++): ?>
-                            <div class="story side-story">
-                                <a href="story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[$i]['StoryID']); ?>">
-                                    <img src="<?php echo htmlspecialchars(getImagePath($recent_stories[$i]['ImagePath'])); ?>" alt="<?php echo htmlspecialchars($recent_stories[$i]['Title']); ?>">
-                                    <h3><?php echo htmlspecialchars($recent_stories[$i]['Title']); ?></h3>
-                                </a>
-                            </div>
-                        <?php endfor; ?>
+                    <div class="story side-story">
+                        <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/073676d2c33b343e190969e7481dd97017ccf03e/BASK.jpeg" alt="Story Image 3">
+                        <h3>Hosts France headline Paris 2024 opening day</h3>
                     </div>
-                <?php else: ?>
-                    <p>No stories available at the moment.</p>
-                <?php endif; ?>
+                    <div class="story side-story">
+                        <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/80ce81b9f1d08f25148101e1b5579d0e00c86019/ashesifootimage.jpeg" alt="Story Image 4">
+                        <h3>Spain stamp ticket to U-20 World Cup</h3>
+                    </div>
+                    <div class="story side-story">
+                        <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/073676d2c33b343e190969e7481dd97017ccf03e/BASK.jpeg" alt="Story Image 5">
+                        <h3>Bindon: New Zealand are set up for something special</h3>
+                    </div>
+                </div>
             </div>
         </section>
 
-
-<section class="upcoming-awards">
-            <h2>UPCOMING EVENTS</h2>
+        <section class="upcoming-awards">
+            <h2>UPCOMING AWARDS EVENTS</h2>
             <div class="awards-container">
-                <?php if (!empty($upcoming_awards)): ?>
-                    <?php foreach ($upcoming_awards as $award): ?>
-                        <div class="award-card">
-                            <div class="award-image" style="background-image: url('../../<?php echo htmlspecialchars($award['EventFlyerImage']); ?>');"></div>
-                            <div class="award-info">
-                                <h3><?php echo htmlspecialchars($award['EventName']); ?></h3>
-                                <p><?php echo htmlspecialchars($award['EventDate']); ?></p>
-                                <p><?php echo htmlspecialchars($award['Location']); ?></p>
-                                <p><?php echo htmlspecialchars($award['EventType']); ?></p>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <p>No upcoming awards at the moment.</p>
-                <?php endif; ?>
+                <div class="award-card">
+                    <div class="award-image" style="background-image: url('https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/fde3eff8d625b4b66d47ecc04b3aaec1840d3413/Ustunnight.jpeg');"></div>
+                    <div class="award-info">
+                        <h3>Sport Event of the Year</h3>
+                        <p>2 Aug 2024</p>
+                        <p>Ashesi Hive</p>
+                    </div>
+                </div>
+                <!-- Add more award cards here if needed -->
             </div>
+            <!-- Petals for animation -->
+            <div class="petal"></div>
+            <div class="petal"></div>
+            <div class="petal"></div>
+            <div class="petal"></div>
+            <div class="petal"></div>
         </section>
 
         <section class="upcoming-tournaments">
-        <div class="tournaments-info">
-            <h2>UPCOMING TOURNAMENTS</h2>
-            <div class="tournaments-container">
-                <?php if (!empty($upcoming_tournaments)): ?>
-                    <?php foreach ($upcoming_tournaments as $tournament): ?>
-                        <div class="tournament-card">
-                            <div class="tournament-image" style="background-image: url('https://rawcdn.githack.com/Lesliekonlack/IgemImages/b6fa87c123e32e5cde47ff412c59e74d6216615f/pngtree-champion-tournament-logo-design-concept-vector-illustration-png-image_8152179.png.jpeg');"></div>
-                            <div class="tournament-info">
-                                <h3><?php echo htmlspecialchars($tournament['Name']); ?></h3>
-                                <p><?php echo htmlspecialchars($tournament['SportName']); ?></p>
-                                <p><?php echo htmlspecialchars($tournament['StartDate']); ?> - <?php echo htmlspecialchars($tournament['EndDate']); ?></p>
-                            </div>
+            <div class="tournaments-info">
+                <h2>UPCOMING TOURNAMENTS</h2>
+                <div class="tournaments-container">
+                    <div class="tournament-card">
+                        <div class="tournament-image" style="background-image: url('https://example.com/tournament1.jpg');"></div>
+                        <div class="tournament-info">
+                            <h3>Football Championship</h3>
+                            <p>5 Aug 2024 - 15 Aug 2024</p>
+                            <p>Ashesi Stadium</p>
                         </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <p>No upcoming tournaments at the moment.</p>
-                <?php endif; ?>
+                    </div>
+                    <div class="tournament-card">
+                        <div class="tournament-image" style="background-image: url('https://example.com/tournament2.jpg');"></div>
+                        <div class="tournament-info">
+                            <h3>Basketball Tournament</h3>
+                            <p>20 Aug 2024 - 30 Aug 2024</p>
+                            <p>Ashesi Sports Hall</p>
+                        </div>
+                    </div>
+                    <!-- Add more tournament cards here if needed -->
+                </div>
             </div>
-        </div>
-        <div class="tournament-image-container">
-            <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/90a505395a43cc861a9679f065dfd1398349a1bb/Image.heic" alt="Tournament Image">
-        </div>
-    </section>
-
+            <div class="tournament-image-container">
+                <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/90a505395a43cc861a9679f065dfd1398349a1bb/Image.heic" alt="Tournament Image">
+            </div>
+        </section>
 
         <section class="rankings-section">
             <div class="rankings-header">
@@ -1367,29 +1279,59 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                 <span class="close">&times;</span>
                 <h2>Ashesi Sports Insight Login</h2>
             </div>
-
             <div class="modal-body">
                 <form action="../../action/login_action.php" method="POST">
                     <input type="email" name="email" placeholder="Email" required>
-                    <input type="password" name="password" placeholder="PassKey" required>
+                    <input type="password" name="password" placeholder="Password" required>
                     <button type="submit">LOGIN</button>
+                    <label>
+                        <input type="checkbox" checked="checked"> Remember me on this device
+                    </label>
                 </form>
+                <div class="register-link">
+                    <p>Don't have an account? <a href="javascript:void(0)" onclick="openRegisterModal()">Register here</a></p>
+                </div>
             </div>
             <div class="modal-footer">
-                <h5 style= "text-align: center;">Sport admins only </h5>
+                <a href="#">Forgot your password or username?</a>
             </div>
         </div>
     </div>
 
-
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close">&times;</span>
+                <h2>Ashesi Sports Insight Register</h2>
+            </div>
+            <div class="modal-body">
+                <form action="#" method="POST">
+                    <input type="email" name="email" placeholder="Email" required>
+                    <input type="password" name="password" placeholder="Password" required>
+                    <input type="password" name="confirm_password" placeholder="Confirm Password" required>
+                    <button type="submit">REGISTER</button>
+                    <label>
+                        <input type="checkbox" required> I agree to the <a style="margin-left:5px;" href="#">Terms and Conditions</a>
+                    </label>
+                </form>
+                <div class="login-link">
+                    <p>Already have an account? <a href="javascript:void(0)" onclick="openLoginModal()">Login here</a></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#">Need help?</a>
+            </div>
+        </div>
+    </div>
 
     <!-- Search Modal -->
     <div id="searchModal" class="search-modal">
         <div class="search-container">
             <span class="close-search">&times;</span>
-            <p style= "margin-left:-850px;" >What team are you looking for?</p>
+            <p style= "margin-left:-850px;" >What are you looking for?</p>
             <img style= "margin-left:330px; margin-top:15px;" src="https://cdn-icons-png.flaticon.com/512/54/54481.png" alt="Search Icon" class="search-icon">
-            <input type="text" placeholder="Type the team name here">
+            <input type="text" placeholder="News, Players, Matches, etc">
         </div>
     </div>
 
@@ -1407,3 +1349,4 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
     </div>
 </body>
 </html>
+
