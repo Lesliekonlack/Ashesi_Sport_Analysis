@@ -440,7 +440,7 @@ function getLogoPath($logo) {
 
             <div id="male-clubs" class="card-container">
                 <?php foreach ($teams as $team): ?>
-                    <?php if ($team['TeamGender'] === 'M'): ?>
+                    <?php if ($team['TeamGender'] === 'Male'): ?>
                         <div class="card">
                             <img src="<?php echo htmlspecialchars(getLogoPath($team['Logo'])); ?>" alt="Team Logo" style="width:100px; height:100px;">
                             <h3><a href="footballclub.php?team_id=<?php echo $team['TeamID']; ?>"><?php echo htmlspecialchars($team['TeamName']); ?></a></h3>
