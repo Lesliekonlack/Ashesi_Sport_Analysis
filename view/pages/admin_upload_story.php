@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['add_story'])) {
         $title = $_POST['title'];
         $content = $_POST['content'];
-        $team_id = $_POST['team_id'] ?? null;
+        $team_id = !empty($_POST['team_id']) ? $_POST['team_id'] : null; // Set to null if empty
         $image = $_FILES['image'];
 
         // Handle image upload
@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $storyID = $_POST['story_id'];
         $title = $_POST['title'];
         $content = $_POST['content'];
-        $team_id = $_POST['team_id'] ?? null;
+        $team_id = !empty($_POST['team_id']) ? $_POST['team_id'] : null; // Set to null if empty
         $image = $_FILES['image'];
         $imagePath = $_POST['existing_image']; // Keep existing image by default
 
@@ -119,7 +119,7 @@ try {
 // Function to get image path, ensuring it exists
 function getImagePath($imagePath) {
     $defaultImagePath = '../../uploads/default_image.png'; // Replace with your default image path
-    if ($imagePath && file_exists(__DIR__ . '/../../' . $imagePath)) {
+    if ($imagePath && file_exists(_DIR_ . '/../../' . $imagePath)) {
         return '../../' . $imagePath;
     }
     return $defaultImagePath;
@@ -506,7 +506,5 @@ function getImagePath($imagePath) {
             <?php endforeach; ?>
         </section>
     </div>
-
-   
 </body>
 </html>
