@@ -1158,7 +1158,7 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                         <a href="#">SPORTS</a>
                         <ul>
                              <li><a href="view/pages/footballsport.php">Football</a></li>
-                            <li><a href="basketballsport.php">Basketball</a></li>
+                            <li><a href="view/pages/basketballsport.php">Basketball</a></li>
                         </ul>
                     </li>
                     <li><a href="#">NEWS</a></li>
@@ -1237,7 +1237,7 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
        <!-- Top Stories Section -->
        <section class="top-stories">
             <h2>TOP STORIES</h2>
-            <a href="all_stories.php" class="see-more">See More</a> <!-- Link to the page showing all stories -->
+            <a href="view/pages/all_stories.php" class="see-more">See More</a> <!-- Link to the page showing all stories -->
             <div class="stories-container">
                 <?php if (!empty($recent_stories)): ?>
                     <div class="story main-story">
