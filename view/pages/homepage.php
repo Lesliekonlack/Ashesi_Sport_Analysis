@@ -1311,6 +1311,6 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                 <!-- Match details will be loaded here -->
             </div>
         </div>
-    </div>
+    </div> 
 </body>
 </html>
