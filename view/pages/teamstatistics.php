@@ -589,4 +589,9 @@ function getImagePath($image, $defaultImage) {
         };
     </script>
 </body>
+<<<<<<< HEAD
 </html>
+=======
+</html>
+
+>>>>>>> c8fd726d7e6dfad5504611f15ad14b8a7dd45e9c

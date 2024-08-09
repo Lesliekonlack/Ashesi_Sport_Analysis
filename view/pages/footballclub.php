@@ -1291,3 +1291,4 @@ function getImagePath($image, $defaultImage) {
     </script>
 </body>
 </html>
+

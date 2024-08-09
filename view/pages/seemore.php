@@ -460,3 +460,4 @@ function getImagePath($image, $defaultImage) {
     </footer>
 </body>
 </html>
+
