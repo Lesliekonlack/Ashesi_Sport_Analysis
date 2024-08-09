@@ -2,48 +2,46 @@
 session_start();
 include '../../settings/connection.php';
 
+
 // Fetch tournaments
 $tournaments_sql = "SELECT * FROM tournaments";
 $tournaments_stmt = $conn->prepare($tournaments_sql);
 $tournaments_stmt->execute();
 $tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-include 'settings/connection.php';
 
-// Function to fetch scores for each match
-function getMatchScores($conn, $matchID) {
-    $sql = "SELECT e.TeamID, COUNT(*) as Goals
-            FROM match_events e
-            WHERE e.MatchID = :matchID AND e.EventType = 'goal'
-            GROUP BY e.TeamID";
-    $stmt = $conn->prepare($sql);
-    $stmt->execute(['matchID' => $matchID]);
-    $scores = $stmt->fetchAll(PDO::FETCH_ASSOC);
+include '../../settings/connection.php';
 
-    $result = ['team1' => 0, 'team2' => 0];
-    foreach ($scores as $score) {
-        if ($score['TeamID'] == 1) {
-            $result['team1'] = $score['Goals'];
-        } else {
-            $result['team2'] = $score['Goals'];
-        }
-    }
-    return $result;
-}
-
-// Fetch matches from the database
-$sql = "SELECT m.MatchID, m.Date, m.Time, t1.TeamName as Team1Name, t2.TeamName as Team2Name, 
-               s.SportName, tr.Name as TournamentName, m.HasEnded
+// Fetch upcoming matches
+$sql = "SELECT m.MatchID, m.Date, m.Time, m.SportID, m.Team1ID, m.Team2ID, m.TournamentID, 
+               t1.TeamName as Team1Name, t2.TeamName as Team2Name, s.SportName, 
+               tr.Name as TournamentName
         FROM matches m
         JOIN teams t1 ON m.Team1ID = t1.TeamID
         JOIN teams t2 ON m.Team2ID = t2.TeamID
         JOIN sports s ON m.SportID = s.SportID
         LEFT JOIN tournaments tr ON m.TournamentID = tr.TournamentID
-        WHERE (m.HasEnded = 0 OR (m.HasEnded = 1 AND m.Date = CURDATE()))
-        ORDER BY m.Date ASC, m.Time ASC";
+        WHERE m.IsUpcoming = TRUE
+        ORDER BY m.Date ASC
+        LIMIT 5"; // Limit to the number of matches you want to display
+$stmt = $conn->prepare($sql);
+$stmt->execute();
+$upcoming_matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch matches (regardless of status) along with tournament names if available
+$sql = "SELECT m.MatchID, m.Date, m.Time, t1.TeamName as Team1Name, t2.TeamName as Team2Name, s.SportName, 
+               tr.Name as TournamentName
+        FROM matches m
+        JOIN teams t1 ON m.Team1ID = t1.TeamID
+        JOIN teams t2 ON m.Team2ID = t2.TeamID
+        JOIN sports s ON m.SportID = s.SportID
+        LEFT JOIN tournaments tr ON m.TournamentID = tr.TournamentID
+        ORDER BY m.Date ASC";
 $stmt = $conn->prepare($sql);
 $stmt->execute();
 $matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
 
 // Fetch five most recent stories
 $stories_sql = "SELECT * FROM stories ORDER BY DatePosted DESC LIMIT 5";
@@ -54,7 +52,7 @@ $recent_stories = $stories_stmt->fetchAll(PDO::FETCH_ASSOC);
 // Function to get image path, ensuring it exists
 function getImagePath($imagePath) {
     $defaultImagePath = '../../uploads/default_image.png'; // Replace with your default image path
-    if ($imagePath && file_exists(_DIR_ . '/../../' . $imagePath)) {
+    if ($imagePath && file_exists(__DIR__ . '/../../' . $imagePath)) {
         return '../../' . $imagePath;
     }
     return $defaultImagePath;
@@ -69,6 +67,7 @@ $awards_stmt = $conn->prepare($awards_sql);
 $awards_stmt->execute();
 $upcoming_awards = $awards_stmt->fetchAll(PDO::FETCH_ASSOC);
 
+
 $tournaments_sql = "SELECT t.Name, s.SportName, t.StartDate, t.EndDate FROM tournaments t 
                     JOIN sports s ON t.SportID = s.SportID
                     WHERE t.StartDate >= CURDATE()
@@ -77,19 +76,75 @@ $tournaments_stmt = $conn->prepare($tournaments_sql);
 $tournaments_stmt->execute();
 $upcoming_tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-function checkMatchStatus($match) {
-    $currentDate = date('Y-m-d');
-    $currentTime = date('H:i:s');
 
-    if ($match['HasEnded']) {
-        return 'Ended';
-    } elseif ($match['Date'] < $currentDate || ($match['Date'] == $currentDate && $match['Time'] <= $currentTime)) {
-        return 'Ongoing';
-    } else {
-        return 'Upcoming';
+function getMatches($conn) {
+    $sql = "SELECT m.MatchID, m.Date, m.Time, t1.TeamName as Team1Name, t2.TeamName as Team2Name, m.HasEnded, m.IsUpcoming
+            FROM matches m
+            JOIN teams t1 ON m.Team1ID = t1.TeamID
+            JOIN teams t2 ON m.Team2ID = t2.TeamID
+            WHERE (m.HasEnded = 0 AND m.IsUpcoming = 1)
+               OR (m.HasEnded = 1 AND TIMESTAMPDIFF(HOUR, CONCAT(m.Date, ' ', m.Time), NOW()) <= 24)";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getMatchEvents($conn, $matchID) {
+    $sql = "SELECT e.TeamID, COUNT(*) as Goals
+            FROM match_events e
+            WHERE e.MatchID = :matchID AND e.EventType = 'goal'
+            GROUP BY e.TeamID";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['matchID' => $matchID]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getMatchDetails($conn, $matchID) {
+    $sql = "SELECT e.PlayerName, e.TeamID, e.EventType, e.EventTime
+            FROM match_events e
+            WHERE e.MatchID = :matchID";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['matchID' => $matchID]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function updateMatchStatus($conn, $matchID, $scoreTeam1, $scoreTeam2) {
+    $sql = "UPDATE matches SET HasEnded = 1, IsUpcoming = 0, ScoreTeam1 = :scoreTeam1, ScoreTeam2 = :scoreTeam2 WHERE MatchID = :matchID";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['scoreTeam1' => $scoreTeam1, 'scoreTeam2' => $scoreTeam2, 'matchID' => $matchID]);
+}
+
+function checkAndUpdateMatchStatus($conn) {
+    $sql = "SELECT MatchID, Date, Time FROM matches WHERE HasEnded = 0 AND IsUpcoming = 1";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+    $matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $currentTime = new DateTime();
+
+    foreach ($matches as $match) {
+        $matchTime = new DateTime($match['Date'] . ' ' . $match['Time']);
+        $interval = $currentTime->diff($matchTime);
+        $minutesPassed = ($interval->days * 24 * 60) + ($interval->h * 60) + $interval->i;
+
+        if ($minutesPassed >= 140) {
+            // Update the match status to ended and calculate the final score
+            $events = getMatchEvents($conn, $match['MatchID']);
+            $scoreTeam1 = 0;
+            $scoreTeam2 = 0;
+            foreach ($events as $event) {
+                if ($event['TeamID'] == 1) {
+                    $scoreTeam1 = $event['Goals'];
+                } else {
+                    $scoreTeam2 = $event['Goals'];
+                }
+            }
+            updateMatchStatus($conn, $match['MatchID'], $scoreTeam1, $scoreTeam2);
+        }
     }
 }
 
+checkAndUpdateMatchStatus($conn);
+$upcomingMatches = getMatches($conn);
 
 if (isset($_GET['matchID']) && isset($_GET['action'])) {
     $matchID = $_GET['matchID'];
@@ -103,8 +158,6 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
         exit;
     }
 }
-
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -219,28 +272,36 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                 carousel.scrollTo({ left: scrollPosition, behavior: 'smooth' });
             });
 
+            const getCurrentDateTime = () => {
+                const now = new Date();
+                const date = now.toISOString().split('T')[0];
+                const time = now.toTimeString().split(' ')[0];
+                return { date, time };
+            };
+
             // Update scores dynamically
             const updateScores = () => {
+                const { date, time } = getCurrentDateTime();
+
                 carouselItems.forEach(item => {
                     const matchID = item.getAttribute('data-match-id');
-                    fetch(?matchID=${matchID}&action=getMatchEvents)
+                    const matchDate = item.getAttribute('data-match-date');
+                    const matchTime = item.getAttribute('data-match-time');
+                    const scoreElement = item.querySelector('.score');
+                    const statusElement = item.querySelector('.status');
+
+                    fetch(`?matchID=${matchID}&action=getMatchEvents`)
                         .then(response => response.json())
                         .then(data => {
-                            const scoreElement = item.querySelector('.score');
                             const team1Goals = data[0]?.Goals || 0;
                             const team2Goals = data[1]?.Goals || 0;
-                            scoreElement.textContent = ${team1Goals} : ${team2Goals};
+                            scoreElement.textContent = `${team1Goals} : ${team2Goals}`;
 
-                            const statusElement = item.querySelector('.status');
-                            const matchDate = item.getAttribute('data-match-date');
-                            const matchTime = item.getAttribute('data-match-time');
-                            const matchDateTime = new Date(${matchDate}T${matchTime});
+                            const matchDateTime = new Date(`${matchDate}T${matchTime}`);
                             const now = new Date();
                             const timeDifference = Math.floor((now - matchDateTime) / 1000 / 60); // in minutes
 
-                            if (item.getAttribute('data-has-ended') == '1') {
-                                statusElement.textContent = 'Ended';
-                            } else if (timeDifference >= 140) {
+                            if (timeDifference >= 140) {
                                 statusElement.textContent = 'Ended';
                             } else if (timeDifference >= 0 && timeDifference < 140) {
                                 statusElement.textContent = 'On-going';
@@ -257,12 +318,12 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
             carouselItems.forEach(item => {
                 item.addEventListener('click', () => {
                     const matchID = item.getAttribute('data-match-id');
-                    fetch(?matchID=${matchID}&action=getMatchDetails)
+                    fetch(`?matchID=${matchID}&action=getMatchDetails`)
                         .then(response => response.json())
                         .then(data => {
                             const modalContent = document.querySelector('#matchDetailContent');
                             modalContent.innerHTML = data.map(event => 
-                                <p>${event.EventTime} - ${event.PlayerName} (${event.EventType})</p>
+                                `<p>${event.EventTime} - ${event.PlayerName} (${event.EventType})</p>`
                             ).join('');
                             document.querySelector('#matchDetailModal').style.display = 'block';
                         });
@@ -1161,24 +1222,20 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
             <div class="carousel-container">
                 <button class="carousel-arrow carousel-prev">&#9664;</button>
                 <div class="carousel-track">
-    <?php foreach ($matches as $match): ?>
-    <?php $scores = getMatchScores($conn, $match['MatchID']); ?>
-    <div class="match" data-match-id="<?php echo $match['MatchID']; ?>" data-match-date="<?php echo $match['Date']; ?>" data-match-time="<?php echo $match['Time']; ?>" data-has-ended="<?php echo $match['HasEnded']; ?>">
-        <p><?php echo htmlspecialchars($match['Date']); ?> - <?php echo htmlspecialchars($match['Time']); ?></p>
-        <h3><?php echo htmlspecialchars($match['Team1Name']); ?> vs <?php echo htmlspecialchars($match['Team2Name']); ?></h3>
-        <?php if (!empty($match['TournamentName'])): ?>
-            <p><?php echo htmlspecialchars($match['TournamentName']); ?></p>
-        <?php else: ?>
-            <p>Friendly Match</p>
-        <?php endif; ?>
-        <div class="score"><?php echo htmlspecialchars($scores['team1']); ?> : <?php echo htmlspecialchars($scores['team2']); ?></div>
-        <div class="status">
-            <?php echo checkMatchStatus($match); ?>
-        </div>
-    </div>
-    <?php endforeach; ?>
-</div>
-
+                    <?php foreach ($matches as $match): ?>
+                    <div class="match" data-match-id="<?php echo $match['MatchID']; ?>" data-match-date="<?php echo $match['Date']; ?>" data-match-time="<?php echo $match['Time']; ?>">
+                        <p><?php echo htmlspecialchars($match['Date']); ?> - <?php echo htmlspecialchars($match['Time']); ?></p>
+                        <h3><?php echo htmlspecialchars($match['Team1Name']); ?> vs <?php echo htmlspecialchars($match['Team2Name']); ?></h3>
+                        <?php if (!empty($match['TournamentName'])): ?>
+                            <p><?php echo htmlspecialchars($match['TournamentName']); ?></p>
+                        <?php else: ?>
+                            <p>Friendly Match</p>
+                        <?php endif; ?>
+                        <div class="score">0 : 0</div>
+                        <div class="status"><?php echo $match['HasEnded'] ? 'Ended' : 'On-going'; ?></div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
                 <button class="carousel-arrow carousel-next">&#9654;</button>
             </div>
         </section>
