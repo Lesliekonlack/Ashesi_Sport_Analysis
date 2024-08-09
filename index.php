@@ -1189,7 +1189,7 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
             <div class="stories-container">
                 <?php if (!empty($recent_stories)): ?>
                     <div class="story main-story">
-                        <a href="story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[0]['StoryID']); ?>">
+                        <a href="view/pages/story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[0]['StoryID']); ?>">
                             <img src="<?php echo htmlspecialchars(getImagePath($recent_stories[0]['ImagePath'])); ?>" alt="<?php echo htmlspecialchars($recent_stories[0]['Title']); ?>">
                             <h3><?php echo htmlspecialchars($recent_stories[0]['Title']); ?></h3>
                         </a>
