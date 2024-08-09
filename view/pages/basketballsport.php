@@ -303,7 +303,6 @@
             </div>
 
             <div id="male-clubs" class="card-container">
-                <a href="basketballclub.php?club_id=1">
                     <div class="card">
                         <img src="placeholder.png" alt="Default Logo" style="width:100px; height:100px;">
                         <h3>Ashesi Eagles Basket </h3>
@@ -311,7 +310,6 @@
                         <button class="upload-logo">Upload Logo</button>
                     </div>
                 </a>
-                <a href="basketballclub.php?club_id=2">
                     <div class="card">
                         <img src="placeholder.png" alt="Default Logo" style="width:100px; height:100px;">
                         <h3>Ashesi Falcons Basket </h3>
@@ -323,7 +321,6 @@
             </div>
 
             <div id="female-clubs" class="card-container" style="display:none;">
-                <a href="basketballclub.php?club_id=3">
                     <div class="card">
                         <img src="placeholder.png" alt="Default Logo" style="width:100px; height:100px;">
                         <h3>Ashesi Eagles Basket (Women)</h3>
@@ -331,7 +328,6 @@
                         <button class="upload-logo">Upload Logo</button>
                     </div>
                 </a>
-                <a href="basketballclub.php?club_id=4">
                     <div class="card">
                         <img src="placeholder.png" alt="Default Logo" style="width:100px; height:100px;">
                         <h3>Ashesi Falcons Basket (Women)</h3>
