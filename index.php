@@ -1,6 +1,6 @@
 <?php
 session_start();
-include '../../settings/connection.php';
+include 'settings/connection.php';
 
 function getUpcomingMatches($conn) {
     $sql = "SELECT m.MatchID, m.Date, m.Time, t1.TeamName as Team1Name, t2.TeamName as Team2Name, m.ScoreTeam1, m.ScoreTeam2, m.HasEnded, m.IsUpcoming
