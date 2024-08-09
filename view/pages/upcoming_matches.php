@@ -1,38 +1,27 @@
-[08:59, 8/9/2024] Lulu: footballclub.php
-[09:29, 8/9/2024] Lulu: <?php
+<?php
 session_start();
 include '../../settings/connection.php';
 
 
-// Fetch tournaments and store them in an associative array
-$tournaments_sql = "SELECT * FROM tournaments";
-$tournaments_stmt = $conn->prepare($tournaments_sql);
-$tournaments_stmt->execute();
-$tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$tournament_names = [];
-foreach ($tournaments as $tournament) {
-    $tournament_names[$tournament['TournamentID']] = $tournament['Name'];
-}
-
 // Fetch matches (regardless of status) along with tournament names if available
 $sql = "SELECT m.MatchID, m.Date, m.Time, t1.TeamName as Team1Name, t2.TeamName as Team2Name, s.SportName, 
-               m.TournamentID
+               tr.Name as TournamentName
         FROM matches m
         JOIN teams t1 ON m.Team1ID = t1.TeamID
         JOIN teams t2 ON m.Team2ID = t2.TeamID
         JOIN sports s ON m.SportID = s.SportID
+        LEFT JOIN tournaments tr ON m.TournamentID = tr.TournamentID
         ORDER BY m.Date ASC";
 $stmt = $conn->prepare($sql);
 $stmt->execute();
 $matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 
 // Fetch tournaments
 $tournaments_sql = "SELECT * FROM tournaments";
 $tournaments_stmt = $conn->prepare($tournaments_sql);
 $tournaments_stmt->execute();
 $tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
-
 
 // Fetch coach ID and team ID from session
 $is_coach = isset($_SESSION['coach_id']);
@@ -756,14 +745,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
         <?php foreach ($upcoming_matches as $match): ?>
             <div class="upcoming-matches" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">
-            <div class="match-details">
-                    <h3><?php echo htmlspecialchars($match['Team1Name']) . ' vs ' . htmlspecialchars($match['Team2Name']); ?></h3>
-                    <p>Date: <?php echo htmlspecialchars($match['Date']); ?></p>
-                    <p>Time: <?php echo htmlspecialchars($match['Time']); ?> GMT</p>
-                    <p>Sport: <?php echo htmlspecialchars($match['SportName']); ?></p>
+                <div class="match-details">
+                <h3><?php echo htmlspecialchars($match['Team1Name']) . ' vs ' . htmlspecialchars($match['Team2Name']); ?></h3>
+                <p>Date: <?php echo htmlspecialchars($match['Date']); ?></p>
+                <p>Time: <?php echo htmlspecialchars($match['Time']); ?> GMT</p>
+                <p>Sport: <?php echo htmlspecialchars($match['SportName']); ?></p>
 
-                   
+                <?php if (!empty($match['TournamentID'])): ?>
+                    <p><?php 
+                        // Fetch the tournament name based on TournamentID
+                        $tournament_sql = "SELECT Name FROM tournaments WHERE TournamentID = ?";
+                        $tournament_stmt = $conn->prepare($tournament_sql);
+                        $tournament_stmt->execute([$match['TournamentID']]);
+                        $tournament = $tournament_stmt->fetch(PDO::FETCH_ASSOC);
 
+                        echo htmlspecialchars($tournament['Name']);
+                    ?></p>
+                <?php else: ?>
+                    <p>Friendly Match</p>
+                <?php endif; ?>
 
     <?php if (!$can_edit): ?>
         <!-- <button>Notify Me</button> -->
@@ -841,13 +841,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <h2>Past Matches</h2>
             <?php foreach ($past_matches as $match): ?>
                 <div class="past-matches" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">
-                <div class="match-details">
-                <h3><?php echo htmlspecialchars($match['Team1Name']) . ' vs ' . htmlspecialchars($match['Team2Name']); ?></h3>
-                <p>Date: <?php echo htmlspecialchars($match['Date']); ?></p>
-                <p>Time: <?php echo htmlspecialchars($match['Time']); ?> GMT</p>
-                <p>Sport: <?php echo htmlspecialchars($match['SportName']); ?></p>
+                    <div class="match-details">
+                    <h3><?php echo htmlspecialchars($match['Team1Name']) . ' vs ' . htmlspecialchars($match['Team2Name']); ?></h3>
+<p>Date: <?php echo htmlspecialchars($match['Date']); ?></p>
+<p>Time: <?php echo htmlspecialchars($match['Time']); ?> GMT</p>
+<p>Sport: <?php echo htmlspecialchars($match['SportName']); ?></p>
 
+<?php 
+// Check if the match has a TournamentID and fetch the tournament name
+if (!empty($match['TournamentID'])) {
+    $tournament_sql = "SELECT Name FROM tournaments WHERE TournamentID = ?";
+    $tournament_stmt = $conn->prepare($tournament_sql);
+    $tournament_stmt->execute([$match['TournamentID']]);
+    $tournament = $tournament_stmt->fetch(PDO::FETCH_ASSOC);
 
+    if ($tournament) {
+        echo '<p>Tournament: ' . htmlspecialchars($tournament['Name']) . '</p>';
+    } else {
+        echo '<p>Tournament: Not specified</p>';
+    }
+} else {
+    echo '<p>Tournament: Friendly</p>';
+}
+?>
 
                         <?php if ($can_edit): ?>
                             <form action="upcoming_matches.php" method="post" class="delete-form">
@@ -914,7 +930,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 const timeDifference = currentTimeDate - matchDateTime;
                 const ninetyMinutes = 90 * 60 * 1000; // 90 minutes in milliseconds
 
-                const confirmationMessage = The match started at ${matchDateTime.toTimeString().split(' ')[0]} GMT. It is currently ${currentTime}. Are you sure you want to mark this match as ended?;
+                const confirmationMessage = `The match started at ${matchDateTime.toTimeString().split(' ')[0]} GMT. It is currently ${currentTime}. Are you sure you want to mark this match as ended?`;
 
                 if (confirm(confirmationMessage)) {
                     const xhr = new XMLHttpRequest();
