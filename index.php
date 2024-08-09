@@ -1,6 +1,6 @@
 <?php
 session_start();
-include '../../settings/connection.php';
+include 'settings/connection.php';
 
 
 // Fetch tournaments
