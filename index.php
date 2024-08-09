@@ -1101,7 +1101,7 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                     <li>
                         <a href="#">SPORTS</a>
                         <ul>
-                             <li><a href="view/pagesfootballsport.php">Football</a></li>
+                             <li><a href="view/pages/footballsport.php">Football</a></li>
                             <li><a href="basketballsport.php">Basketball</a></li>
                         </ul>
                     </li>
