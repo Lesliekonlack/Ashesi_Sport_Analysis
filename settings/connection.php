@@ -2,7 +2,7 @@
 $host = 'localhost';
 $db   = 'sports_db';
 $user = 'root';
-$pass = 'HohIr041YJi+';
+$pass = 'MBAFOR41*123#HHHH';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";

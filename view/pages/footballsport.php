@@ -496,3 +496,4 @@ function getLogoPath($logo) {
     </footer>
 </body>
 </html>
+

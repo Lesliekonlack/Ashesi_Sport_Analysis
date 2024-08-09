@@ -8,7 +8,7 @@ $tournaments_stmt = $conn->prepare($tournaments_sql);
 $tournaments_stmt->execute();
 $tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-include 'settings/connection.php';
+include '../../settings/connection.php';
 
 // Function to fetch scores for each match
 function getMatchScores($conn, $matchID) {
@@ -223,18 +223,18 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
             const updateScores = () => {
                 carouselItems.forEach(item => {
                     const matchID = item.getAttribute('data-match-id');
-                    fetch(?matchID=${matchID}&action=getMatchEvents)
+                    fetch(`?matchID=${matchID}&action=getMatchEvents`)
                         .then(response => response.json())
                         .then(data => {
                             const scoreElement = item.querySelector('.score');
                             const team1Goals = data[0]?.Goals || 0;
                             const team2Goals = data[1]?.Goals || 0;
-                            scoreElement.textContent = ${team1Goals} : ${team2Goals};
+                            scoreElement.textContent = `${team1Goals} : ${team2Goals}`;
 
                             const statusElement = item.querySelector('.status');
                             const matchDate = item.getAttribute('data-match-date');
                             const matchTime = item.getAttribute('data-match-time');
-                            const matchDateTime = new Date(${matchDate}T${matchTime});
+                            const matchDateTime = new Date(`${matchDate}T${matchTime}`);
                             const now = new Date();
                             const timeDifference = Math.floor((now - matchDateTime) / 1000 / 60); // in minutes
 
@@ -257,12 +257,12 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
             carouselItems.forEach(item => {
                 item.addEventListener('click', () => {
                     const matchID = item.getAttribute('data-match-id');
-                    fetch(?matchID=${matchID}&action=getMatchDetails)
+                    fetch(`?matchID=${matchID}&action=getMatchDetails`)
                         .then(response => response.json())
                         .then(data => {
                             const modalContent = document.querySelector('#matchDetailContent');
                             modalContent.innerHTML = data.map(event => 
-                                <p>${event.EventTime} - ${event.PlayerName} (${event.EventType})</p>
+                                `<p>${event.EventTime} - ${event.PlayerName} (${event.EventType})</p>`
                             ).join('');
                             document.querySelector('#matchDetailModal').style.display = 'block';
                         });
@@ -1189,11 +1189,12 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
             <div class="stories-container">
                 <?php if (!empty($recent_stories)): ?>
                     <div class="story main-story">
-                        <a href="view/pages/story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[0]['StoryID']); ?>">
-                            <img src="<?php echo htmlspecialchars(getImagePath($recent_stories[0]['ImagePath'])); ?>" alt="<?php echo htmlspecialchars($recent_stories[0]['Title']); ?>">
-                            <h3><?php echo htmlspecialchars($recent_stories[0]['Title']); ?></h3>
-                        </a>
-                    </div>
+    <a href="view/pages/story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[0]['StoryID']); ?>">
+        <img src="<?php echo htmlspecialchars(getImagePath($recent_stories[0]['ImagePath'])); ?>" alt="<?php echo htmlspecialchars($recent_stories[0]['Title']); ?>">
+        <h3><?php echo htmlspecialchars($recent_stories[0]['Title']); ?></h3>
+    </a>
+</div>
+
                     <div class="side-stories">
                         <?php for ($i = 1; $i < count($recent_stories); $i++): ?>
                             <div class="story side-story">
@@ -1311,6 +1312,6 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                 <!-- Match details will be loaded here -->
             </div>
         </div>
-    </div> 
+    </div>
 </body>
 </html>

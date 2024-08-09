@@ -81,3 +81,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['team_logo']) && isset
 
 echo json_encode($response);
 ?>
+
