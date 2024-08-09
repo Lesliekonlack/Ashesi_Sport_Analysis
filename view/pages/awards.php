@@ -331,6 +331,10 @@ function getPlayerImagePath($imagePath) {
             <li><a href="players.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Players</a></li>
             <li><a href="upcoming_matches.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Matches</a></li>
             <li><a href="competitions.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Competitions</a></li>
+<<<<<<< HEAD
+=======
+            <li><a href="awards.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Awards</a></li>
+>>>>>>> 11bf3c5efbdadedb41829bbd352aecce1e3be973
             <li><a href="team_stories.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Stories</a></li>
         </ul>
     </div>

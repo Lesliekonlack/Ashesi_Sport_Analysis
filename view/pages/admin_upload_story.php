@@ -119,7 +119,11 @@ try {
 // Function to get image path, ensuring it exists
 function getImagePath($imagePath) {
     $defaultImagePath = '../../uploads/default_image.png'; // Replace with your default image path
+<<<<<<< HEAD
     if ($imagePath && file_exists(__DIR__ . '/../../' . $imagePath)) {
+=======
+    if ($imagePath && file_exists(_DIR_ . '/../../' . $imagePath)) {
+>>>>>>> 11bf3c5efbdadedb41829bbd352aecce1e3be973
         return '../../' . $imagePath;
     }
     return $defaultImagePath;

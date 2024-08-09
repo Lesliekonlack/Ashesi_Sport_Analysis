@@ -1,6 +1,6 @@
 <?php
 session_start();
-include '../../settings/connection.php';
+include 'settings/connection.php';
 
 // Fetch tournaments
 $tournaments_sql = "SELECT * FROM tournaments";
@@ -8,11 +8,7 @@ $tournaments_stmt = $conn->prepare($tournaments_sql);
 $tournaments_stmt->execute();
 $tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-<<<<<<< HEAD
 include 'settings/connection.php';
-=======
-include '../../settings/connection.php';
->>>>>>> 11bf3c5efbdadedb41829bbd352aecce1e3be973
 
 // Function to fetch scores for each match
 function getMatchScores($conn, $matchID) {
@@ -57,7 +53,7 @@ $recent_stories = $stories_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Function to get image path, ensuring it exists
 function getImagePath($imagePath) {
-    $defaultImagePath = '../../uploads/default_image.png'; // Replace with your default image path
+    $defaultImagePath = 'uploads/default_image.png'; // Replace with your default image path
     if ($imagePath && file_exists(__DIR__ . '/../../' . $imagePath)) {
         return '../../' . $imagePath;
     }
@@ -227,30 +223,18 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
             const updateScores = () => {
                 carouselItems.forEach(item => {
                     const matchID = item.getAttribute('data-match-id');
-<<<<<<< HEAD
-                    fetch(`?matchID=${matchID}&action=getMatchEvents`)
-=======
                     fetch(?matchID=${matchID}&action=getMatchEvents)
->>>>>>> 11bf3c5efbdadedb41829bbd352aecce1e3be973
                         .then(response => response.json())
                         .then(data => {
                             const scoreElement = item.querySelector('.score');
                             const team1Goals = data[0]?.Goals || 0;
                             const team2Goals = data[1]?.Goals || 0;
-<<<<<<< HEAD
-                            scoreElement.textContent = `${team1Goals} : ${team2Goals}`;
-=======
                             scoreElement.textContent = ${team1Goals} : ${team2Goals};
->>>>>>> 11bf3c5efbdadedb41829bbd352aecce1e3be973
 
                             const statusElement = item.querySelector('.status');
                             const matchDate = item.getAttribute('data-match-date');
                             const matchTime = item.getAttribute('data-match-time');
-<<<<<<< HEAD
-                            const matchDateTime = new Date(`${matchDate}T${matchTime}`);
-=======
                             const matchDateTime = new Date(${matchDate}T${matchTime});
->>>>>>> 11bf3c5efbdadedb41829bbd352aecce1e3be973
                             const now = new Date();
                             const timeDifference = Math.floor((now - matchDateTime) / 1000 / 60); // in minutes
 
@@ -1117,7 +1101,7 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                     <li>
                         <a href="#">SPORTS</a>
                         <ul>
-                             <li><a href="footballsport.php">Football</a></li>
+                             <li><a href="view/pages/footballsport.php">Football</a></li>
                             <li><a href="basketballsport.php">Basketball</a></li>
                         </ul>
                     </li>
@@ -1146,7 +1130,7 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                     <div class="profile-dropdown">
                         <span class="profile-name" onclick="toggleDropdown()"><?php echo htmlspecialchars($_SESSION['coach_name']); ?></span>
                         <div id="profileDropdown" class="dropdown-content">
-                            <a href="../../action/logout.php">Logout</a>
+                            <a href="action/logout.php">Logout</a>
                         </div>
                     </div>
                 <?php else: ?>
@@ -1201,29 +1185,11 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
        <!-- Top Stories Section -->
        <section class="top-stories">
             <h2>TOP STORIES</h2>
-            <a href="all_stories.php" class="see-more">See More</a> <!-- Link to the page showing all stories -->
+            <a href="view/pages/all_stories.php" class="see-more">See More</a> <!-- Link to the page showing all stories -->
             <div class="stories-container">
                 <?php if (!empty($recent_stories)): ?>
                     <div class="story main-story">
-<<<<<<< HEAD
-    <a href="story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[0]['StoryID']); ?>">
-        <img src="<?php echo htmlspecialchars(getImagePath($recent_stories[0]['ImagePath'])); ?>" alt="<?php echo htmlspecialchars($recent_stories[0]['Title']); ?>">
-        <h3><?php echo htmlspecialchars($recent_stories[0]['Title']); ?></h3>
-    </a>
-</div>
-
-                    <div class="side-stories">
-                        <?php for ($i = 1; $i < count($recent_stories); $i++): ?>
-                            <div class="story side-story">
-                                <a href="story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[$i]['StoryID']); ?>">
-                                    <img src="<?php echo htmlspecialchars(getImagePath($recent_stories[$i]['ImagePath'])); ?>" alt="<?php echo htmlspecialchars($recent_stories[$i]['Title']); ?>">
-                                    <h3><?php echo htmlspecialchars($recent_stories[$i]['Title']); ?></h3>
-                                </a>
-                            </div>
-                        <?php endfor; ?>
-                    </div>
-=======
-                        <a href="story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[0]['StoryID']); ?>">
+                        <a href="view/pages/story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[0]['StoryID']); ?>">
                             <img src="<?php echo htmlspecialchars(getImagePath($recent_stories[0]['ImagePath'])); ?>" alt="<?php echo htmlspecialchars($recent_stories[0]['Title']); ?>">
                             <h3><?php echo htmlspecialchars($recent_stories[0]['Title']); ?></h3>
                         </a>
@@ -1231,14 +1197,13 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                     <div class="side-stories">
                         <?php for ($i = 1; $i < count($recent_stories); $i++): ?>
                             <div class="story side-story">
-                                <a href="story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[$i]['StoryID']); ?>">
+                                <a href="view/pages/story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[$i]['StoryID']); ?>">
                                     <img src="<?php echo htmlspecialchars(getImagePath($recent_stories[$i]['ImagePath'])); ?>" alt="<?php echo htmlspecialchars($recent_stories[$i]['Title']); ?>">
                                     <h3><?php echo htmlspecialchars($recent_stories[$i]['Title']); ?></h3>
                                 </a>
                             </div>
                         <?php endfor; ?>
                     </div>
->>>>>>> 11bf3c5efbdadedb41829bbd352aecce1e3be973
                 <?php else: ?>
                     <p>No stories available at the moment.</p>
                 <?php endif; ?>
@@ -1311,7 +1276,7 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
             </div>
 
             <div class="modal-body">
-                <form action="../../action/login_action.php" method="POST">
+                <form action="action/login_action.php" method="POST">
                     <input type="email" name="email" placeholder="Email" required>
                     <input type="password" name="password" placeholder="PassKey" required>
                     <button type="submit">LOGIN</button>
