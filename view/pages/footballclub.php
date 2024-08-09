@@ -69,45 +69,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $response = [];
 
     // Add new player
-    if (isset($_POST['new_player_name']) && $team_id == $user_team_id) {
-        $player_name = $_POST['new_player_name'];
-        $player_position = $_POST['new_player_position'];
-        $player_age = $_POST['new_player_age'];
-        $player_height = $_POST['new_player_height'];
-        $player_nationality = $_POST['new_player_nationality'];
-        $uploadedFileName = handleFileUpload('new_player_image', '../../uploads/');
+    // Add new player
+if (isset($_POST['new_player_name']) && $team_id == $user_team_id) {
+    $player_name = $_POST['new_player_name'];
+    $player_position = $_POST['new_player_position'];
+    $player_age = $_POST['new_player_age'];
+    $player_height = $_POST['new_player_height'];
+    $player_nationality = $_POST['new_player_nationality'];
+    $uploadedFileName = handleFileUpload('new_player_image', '../../uploads/');
 
-        $sql = "INSERT INTO players (Name, Position, Age, Height, Nationality, Image, TeamID, SportID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        try {
-            $stmt = $conn->prepare($sql);
-            $stmt->execute([$player_name, $player_position, $player_age, $player_height, $player_nationality, $uploadedFileName, $team_id, $team['SportID']]);
+    $sql = "INSERT INTO players (Name, Position, Age, Height, Nationality, Image, TeamID, SportID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    try {
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$player_name, $player_position, $player_age, $player_height, $player_nationality, $uploadedFileName, $team_id, $team['SportID']]);
 
-            $player_id = $conn->lastInsertId();
-            if (isset($_POST['new_player_trophies']) && is_array($_POST['new_player_trophies'])) {
-                foreach ($_POST['new_player_trophies'] as $trophy) {
-                    if (!empty($trophy)) {
-                        list($year, $name) = explode('-', $trophy, 2);
-                        $sql = "INSERT INTO trophies (PlayerID, Year, Name) VALUES (?, ?, ?)";
-                        $stmt = $conn->prepare($sql);
-                        $stmt->execute([$player_id, $year, $name]);
-                    }
+        $player_id = $conn->lastInsertId();
+        if (isset($_POST['new_player_trophies']) && is_array($_POST['new_player_trophies'])) {
+            foreach ($_POST['new_player_trophies'] as $trophy) {
+                if (!empty($trophy)) {
+                    list($year, $name) = explode('-', $trophy, 2);
+                    $sql = "INSERT INTO trophies (PlayerID, Year, Name) VALUES (?, ?, ?)";
+                    $stmt = $conn->prepare($sql);
+                    $stmt->execute([$player_id, $year, $name]);
                 }
             }
-
-            $response['status'] = 'success';
-            $response['message'] = 'Player added successfully.';
-            $response['player_id'] = $player_id;
-            $response['player_name'] = $player_name;
-            $response['player_position'] = $player_position;
-            $response['player_image'] = $uploadedFileName;
-        } catch (PDOException $e) {
-            $response['status'] = 'error';
-            $response['message'] = 'Insert failed: ' . $e->getMessage();
         }
 
-        echo json_encode($response);
+        // Redirect to the same page to reload it
+        header("Location: " . $_SERVER['REQUEST_URI']);
         exit();
+    } catch (PDOException $e) {
+        $response['status'] = 'error';
+        $response['message'] = 'Insert failed: ' . $e->getMessage();
     }
+
+    echo json_encode($response);
+    exit();
+}
+
+    
 
     // Change player picture
     if (isset($_POST['change_player_id']) && $team_id == $user_team_id) {
@@ -128,25 +128,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $response['status'] = 'error';
             $response['message'] = 'File upload failed.';
-        }
-
-        echo json_encode($response);
-        exit();
-    }
-
-    // Delete player
-    if (isset($_POST['delete_player_id']) && $team_id == $user_team_id) {
-        $player_id = (int)$_POST['delete_player_id'];
-        $sql = "DELETE FROM players WHERE PlayerID = ?";
-        try {
-            $stmt = $conn->prepare($sql);
-            $stmt->execute([$player_id]);
-            $response['status'] = 'success';
-            $response['message'] = 'Player deleted successfully.';
-            $response['player_id'] = $player_id;
-        } catch (PDOException $e) {
-            $response['status'] = 'error';
-            $response['message'] = 'Delete failed: ' . $e->getMessage();
         }
 
         echo json_encode($response);
@@ -176,7 +157,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode($response);
         exit();
     }
-
     if (isset($_POST['delete_team_image']) && $team_id == $user_team_id) {
         $sql = "UPDATE teams SET TeamPhoto = NULL WHERE TeamID = ?";
         try {
@@ -192,7 +172,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode($response);
         exit();
     }
-
+    if (isset($_POST['delete_player_id']) && $team_id == $user_team_id) {
+        if (!empty($_POST['delete_player_id'])) {
+            $player_id = (int)$_POST['delete_player_id'];
+            $sql = "DELETE FROM players WHERE PlayerID = ?";
+            try {
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([$player_id]);
+                $response['status'] = 'success';
+                $response['message'] = 'Player deleted successfully.';
+                $response['player_id'] = $player_id;
+            } catch (PDOException $e) {
+                $response['status'] = 'error';
+                $response['message'] = 'Delete failed: ' . $e->getMessage();
+            }
+        } else {
+            $response['status'] = 'error';
+            $response['message'] = 'No player selected to delete.';
+        }
+        echo json_encode($response);
+        exit();
+    }
     if (isset($_FILES['coach_image']) && $team_id == $user_team_id) {
         $uploadedFileName = handleFileUpload('coach_image', '../../uploads/');
         if ($uploadedFileName) {
@@ -215,7 +215,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode($response);
         exit();
     }
-
     if (isset($_POST['delete_coach_image']) && $team_id == $user_team_id) {
         $sql = "UPDATE coaches SET CoachImage = NULL WHERE CoachID = ?";
         try {
@@ -903,32 +902,33 @@ function getImagePath($image, $defaultImage) {
     </div>
 
     <!-- Modal for adding a player -->
-    <div id="addPlayerModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeAddPlayerModal()">&times;</span>
-            <div class="player-info">
-                <h2>Add New Player</h2>
-                <form id="addPlayerForm" method="post" enctype="multipart/form-data">
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                        <input type="text" name="new_player_name" placeholder="Player Name" required style="flex: 1; min-width: 200px;">
-                        <input type="text" name="new_player_position" placeholder="Player Position" required style="flex: 1; min-width: 200px;">
-                        <input type="number" name="new_player_age" placeholder="Player Age" required style="flex: 1; min-width: 100px;">
-                        <input type="text" name="new_player_height" placeholder="Player Height" required style="flex: 1; min-width: 100px;">
-                        <input type="text" name="new_player_nationality" placeholder="Player Country Of Origin" required style="flex: 1; min-width: 200px;">
-                    </div>
-                    <h3 style="margin-top: 20px;">Trophies</h3>
-                    <div id="trophiesContainer">
-                        <input type="text" name="new_player_trophies[]" placeholder="Trophies (format: year-name)" style="width: calc(100% - 100px);">
-                    </div>
-                    <button type="button" onclick="addTrophyField()" style="margin-top: 10px;">Add Trophy</button>
-                    <br>
-                    <input type="file" name="new_player_image" required style="margin-top: 20px;">
-                    <br>
-                    <button type="submit" style="margin-top: 20px;">Add Player</button>
-                </form>
-            </div>
+<!-- Modal for adding a player -->
+<div id="addPlayerModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeAddPlayerModal()">&times;</span>
+        <div class="player-info">
+            <h2>Add New Player</h2>
+            <form id="addPlayerForm" method="post" enctype="multipart/form-data">
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <input type="text" name="new_player_name" placeholder="Player Name" required style="flex: 1; min-width: 200px;">
+                    <input type="text" name="new_player_position" placeholder="Player Position" required style="flex: 1; min-width: 200px;">
+                    <input type="number" name="new_player_age" placeholder="Player Age" required style="flex: 1; min-width: 100px;">
+                    <input type="text" name="new_player_height" placeholder="Player Height" required style="flex: 1; min-width: 100px;">
+                    <input type="text" name="new_player_nationality" placeholder="Player Country Of Origin" required style="flex: 1; min-width: 200px;">
+                </div>
+                <h3 style="margin-top: 20px;">Trophies</h3>
+                <div id="trophiesContainer">
+                    <input type="text" name="new_player_trophies[]" placeholder="Trophies (format: year-name)" style="width: calc(100% - 100px);">
+                </div>
+                <button type="button" onclick="addTrophyField()" style="margin-top: 10px;">Add Trophy</button>
+                <br>
+                <input type="file" name="new_player_image" required style="margin-top: 20px;">
+                <br>
+                <button type="submit" style="margin-top: 20px;">Add Player</button>
+            </form>
         </div>
     </div>
+</div>
 
     <footer>
         <div class="footer-container">
@@ -945,7 +945,7 @@ function getImagePath($image, $defaultImage) {
         input.style = 'width: calc(100% - 100px); margin-top: 10px;';
         container.appendChild(input);
     }
-    </script>
+</script>
     <script>
     document.getElementById('addTrophyButton').addEventListener('click', function() {
         const trophyContainer = document.getElementById('trophiesContainer');
@@ -963,7 +963,7 @@ function getImagePath($image, $defaultImage) {
             event.target.parentNode.remove();
         }
     });
-    </script>
+</script>
 
 
     <script>
@@ -1025,22 +1025,22 @@ function getImagePath($image, $defaultImage) {
 
                 innerElements1.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepInner1 * index;
-                    element.style.transform = rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg);
+                    element.style.transform = `rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg)`;
                 });
 
                 outerElements1.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepOuter1 * index;
-                    element.style.transform = rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg);
+                    element.style.transform = `rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg)`;
                 });
 
                 innerElements2.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepInner2 * index;
-                    element.style.transform = rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg);
+                    element.style.transform = `rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg)`;
                 });
 
                 outerElements2.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepOuter2 * index;
-                    element.style.transform = rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg);
+                    element.style.transform = `rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg)`;
                 });
             }
         });
@@ -1092,7 +1092,7 @@ function getImagePath($image, $defaultImage) {
                 const playerId = player.getAttribute('data-player-id'); // Unique identifier for the player
 
                 // Set the correct URL path for the "See More" link
-                const playerMoreLink = http://localhost/Ashesi_Sport_Analysis/view/pages/seemore.php?player=${playerId};
+                const playerMoreLink = `http://localhost/Ashesi_Sport_Analysis/view/pages/seemore.php?player=${playerId}`;
 
                 if ((showingSet1 && player.classList.contains('set1')) || (!showingSet1 && player.classList.contains('set2'))) {
                     openModal(playerName, playerPosition, playerDescription, playerImage, playerMoreLink);
@@ -1134,7 +1134,7 @@ function getImagePath($image, $defaultImage) {
             .then(data => {
                 if (data.status === 'success') {
                     alert(data.message);
-                    document.getElementById('teamPhoto').src = ../../uploads/${data.image};
+                    document.getElementById('teamPhoto').src = `../../uploads/${data.image}`;
                 } else {
                     alert(data.message);
                 }
@@ -1181,7 +1181,7 @@ function getImagePath($image, $defaultImage) {
             .then(data => {
                 if (data.status === 'success') {
                     alert(data.message);
-                    document.getElementById('coachPhoto').src = ../../uploads/${data.image};
+                    document.getElementById('coachPhoto').src = `../../uploads/${data.image}`;
                 } else {
                     alert(data.message);
                 }
@@ -1228,12 +1228,12 @@ function getImagePath($image, $defaultImage) {
                 .then(data => {
                     if (data.status === 'success') {
                         alert(data.message);
-                        const playerElement = document.querySelector(.orbiting-element[data-player-id='${data.player_id}']);
+                        const playerElement = document.querySelector(`.orbiting-element[data-player-id='${data.player_id}']`);
                         if (playerElement) {
                             playerElement.remove();
                         }
-                        document.querySelector(#playerSelect option[value='${data.player_id}']).remove();
-                        document.querySelector(#changePlayerSelect option[value='${data.player_id}']).remove();
+                        document.querySelector(`#playerSelect option[value='${data.player_id}']`).remove();
+                        document.querySelector(`#changePlayerSelect option[value='${data.player_id}']`).remove();
                     } else {
                         alert(data.message);
                     }
@@ -1256,9 +1256,9 @@ function getImagePath($image, $defaultImage) {
             .then(data => {
                 if (data.status === 'success') {
                     alert(data.message);
-                    const playerElement = document.querySelector(.orbiting-element[data-player-id='${formData.get('change_player_id')}'] img);
+                    const playerElement = document.querySelector(`.orbiting-element[data-player-id='${formData.get('change_player_id')}'] img`);
                     if (playerElement) {
-                        playerElement.src = ../../uploads/${data.image};
+                        playerElement.src = `../../uploads/${data.image}`;
                     }
                 } else {
                     alert(data.message);
@@ -1268,39 +1268,17 @@ function getImagePath($image, $defaultImage) {
         });
 
         document.getElementById('addPlayerForm').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const formData = new FormData(this);
-    if (!validateFileInput('new_player_image', 'Please select an image for the new player.')) { // Make sure this ID is correct
-        return;
-    }
+            // No need for event.preventDefault() here to allow form submission
+        });
 
-    fetch(window.location.href, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            alert(data.message);
-            window.location.reload(); // Reload the page to show the new player
-        } else {
-            alert(data.message);
+        function validateFileInput(inputId, message) {
+            const input = document.getElementById(inputId);
+            if (!input || !input.value) {
+                alert(message);
+                return false;
+            }
+            return true;
         }
-    })
-    .catch(error => console.error('Error:', error));
-});
-
-        // Replace this function:
-function validateFileInput(inputId, message) {
-    const input = document.querySelector(input[name="${inputId}"]);
-    if (!input || !input.files.length) { // Updated condition to check if a file has been selected
-        alert(message);
-        return false;
-    }
-    return true;
-}
-
-// Ensure the correct ID is used when calling this function during the form submission.
 
         function validateSelection(selectId, message) {
             const select = document.getElementById(selectId);
@@ -1313,4 +1291,3 @@ function validateFileInput(inputId, message) {
     </script>
 </body>
 </html>
-
