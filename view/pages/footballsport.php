@@ -1,319 +1,202 @@
-[07:15, 8/9/2024] Lulu: <?php
+<?php
 session_start();
-include '../../settings/connection.php';
+include '../../settings/connection.php'; // Include your database connection file
 
-// Fetch tournaments
-$tournaments_sql = "SELECT * FROM tournaments";
-$tournaments_stmt = $conn->prepare($tournaments_sql);
-$tournaments_stmt->execute();
-$tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
+// Enable error reporting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-include 'settings/connection.php';
-
-// Function to fetch scores for each match
-function getMatchScores($conn, $matchID) {
-    $sql = "SELECT e.TeamID, COUNT(*) as Goals
-            FROM match_events e
-            WHERE e.MatchID = :matchID AND e.EventType = 'goal'
-            GROUP BY e.TeamID";
-    $stmt = $conn->prepare($sql);
-    $stmt->execute(['matchID' => $matchID]);
-    $scores = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    $result = ['team1' => 0, 'team2' => 0];
-    foreach ($scores as $score) {
-        if ($score['TeamID'] == 1) {
-            $result['team1'] = $score['Goals'];
-        } else {
-            $result['team2'] = $score['Goals'];
-        }
+// Fetch teams from the database
+$teams = [];
+$sql = "SELECT t.TeamID, t.TeamName, t.CoachID, t.TeamGender, t.Logo, c.Name AS CoachName 
+        FROM teams t
+        JOIN coaches c ON t.CoachID = c.CoachID
+        WHERE t.SportID = (SELECT SportID FROM sports WHERE SportName = 'Football')";
+try {
+    $stmt = $conn->query($sql);
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $teams[] = $row;
     }
-    return $result;
+} catch (PDOException $e) {
+    echo 'Query failed: ' . $e->getMessage();
+    exit();
 }
 
-// Fetch matches from the database
-$sql = "SELECT m.MatchID, m.Date, m.Time, t1.TeamName as Team1Name, t2.TeamName as Team2Name, 
-               s.SportName, tr.Name as TournamentName, m.HasEnded
-        FROM matches m
-        JOIN teams t1 ON m.Team1ID = t1.TeamID
-        JOIN teams t2 ON m.Team2ID = t2.TeamID
-        JOIN sports s ON m.SportID = s.SportID
-        LEFT JOIN tournaments tr ON m.TournamentID = tr.TournamentID
-        WHERE (m.HasEnded = 0 OR (m.HasEnded = 1 AND m.Date = CURDATE()))
-        ORDER BY m.Date ASC, m.Time ASC";
-$stmt = $conn->prepare($sql);
-$stmt->execute();
-$matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Check if user is logged in and is a coach
+$is_coach = isset($_SESSION['coach_id']);
+$user_team_id = $is_coach && isset($_SESSION['team_id']) ? $_SESSION['team_id'] : null;
 
-// Fetch five most recent stories
-$stories_sql = "SELECT * FROM stories ORDER BY DatePosted DESC LIMIT 5";
-$stories_stmt = $conn->prepare($stories_sql);
-$stories_stmt->execute();
-$recent_stories = $stories_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Function to get image path, ensuring it exists
-function getImagePath($imagePath) {
-    $defaultImagePath = '../../uploads/default_image.png'; // Replace with your default image path
-    if ($imagePath && file_exists(_DIR_ . '/../../' . $imagePath)) {
-        return '../../' . $imagePath;
+// Function to get logo path
+function getLogoPath($logo) {
+    $defaultLogo = 'default_logo.png'; // Ensure this file exists in the appropriate directory
+    if ($logo && file_exists(__DIR__ . '/../../uploads/' . $logo)) {
+        return '../../uploads/' . $logo;
     }
-    return $defaultImagePath;
+    return $defaultLogo;
 }
-
-// Fetch upcoming awards
-$awards_sql = "SELECT e.*, s.SportName FROM events e
-               JOIN sports s ON e.SportID = s.SportID
-               WHERE e.EventDate >= CURDATE()
-               ORDER BY e.EventDate ASC";
-$awards_stmt = $conn->prepare($awards_sql);
-$awards_stmt->execute();
-$upcoming_awards = $awards_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$tournaments_sql = "SELECT t.Name, s.SportName, t.StartDate, t.EndDate FROM tournaments t 
-                    JOIN sports s ON t.SportID = s.SportID
-                    WHERE t.StartDate >= CURDATE()
-                    ORDER BY t.StartDate ASC";
-$tournaments_stmt = $conn->prepare($tournaments_sql);
-$tournaments_stmt->execute();
-$upcoming_tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-function checkMatchStatus($match) {
-    $currentDate = date('Y-m-d');
-    $currentTime = date('H:i:s');
-
-    if ($match['HasEnded']) {
-        return 'Ended';
-    } elseif ($match['Date'] < $currentDate || ($match['Date'] == $currentDate && $match['Time'] <= $currentTime)) {
-        return 'Ongoing';
-    } else {
-        return 'Upcoming';
-    }
-}
-
-
-if (isset($_GET['matchID']) && isset($_GET['action'])) {
-    $matchID = $_GET['matchID'];
-    if ($_GET['action'] == 'getMatchEvents') {
-        $events = getMatchEvents($conn, $matchID);
-        echo json_encode($events);
-        exit;
-    } elseif ($_GET['action'] == 'getMatchDetails') {
-        $details = getMatchDetails($conn, $matchID);
-        echo json_encode($details);
-        exit;
-    }
-}
-
-
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ashesi Sports Insight</title>
+    <title>Football - Ashesi Sports Insight</title>
     <link rel="stylesheet" href="styles.css">
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const images = [
-                'https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/80ce81b9f1d08f25148101e1b5579d0e00c86019/ashesifootimage.jpeg',
-                'https://raw.githubusercontent.com/naomikonlack/WEBTECHGITDEMO/main/ashesifootball2.webp',
-                'https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/80ce81b9f1d08f25148101e1b5579d0e00c86019/ashesifootball7.webp',
-                'https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/8fb8611d9708745bc19df059ebc2b5b92c6755f3/BESTPLAYER.jpeg',
-                'https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/073676d2c33b343e190969e7481dd97017ccf03e/BASK.jpeg',
-                'https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/073676d2c33b343e190969e7481dd97017ccf03e/BASKETBALL1.jpeg'
-            ];
-
-            let currentIndex = 0;
-            const heroImage = document.querySelector('.hero-image');
-            const leftArrow = document.querySelector('.left-arrow');
-            const rightArrow = document.querySelector('.right-arrow');
-
-            const updateImage = () => {
-                heroImage.src = images[currentIndex];
-            };
-
-            setInterval(() => {
-                currentIndex = (currentIndex + 1) % images.length;
-                updateImage();
-            }, 10000); // Change image every 10 seconds
-
-            leftArrow.addEventListener('click', () => {
-                currentIndex = (currentIndex - 1 + images.length) % images.length;
-                updateImage();
-            });
-
-            rightArrow.addEventListener('click', () => {
-                currentIndex = (currentIndex + 1) % images.length;
-                updateImage();
-            });
-
-            const profileIcon = document.querySelector('.profile-icon');
-            const searchIcon = document.querySelector('.search-icon');
-            const loginModal = document.querySelector('#loginModal');
-            const registerModal = document.querySelector('#registerModal');
-            const searchModal = document.querySelector('#searchModal');
-            const closeModalButtons = document.querySelectorAll('.close');
-            const closeSearchButton = document.querySelector('.close-search');
-
-            profileIcon?.addEventListener('click', () => {
-                loginModal.style.display = 'block';
-            });
-
-            searchIcon.addEventListener('click', () => {
-                searchModal.style.display = 'block';
-                document.body.classList.add('blurred');
-            });
-
-            closeModalButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    loginModal.style.display = 'none';
-                    registerModal.style.display = 'none';
-                });
-            });
-
-            closeSearchButton.addEventListener('click', () => {
-                searchModal.style.display = 'none';
-                document.body.classList.remove('blurred');
-            });
-
-            window.addEventListener('click', (event) => {
-                if (event.target == loginModal) {
-                    loginModal.style.display = 'none';
-                } else if (event.target == registerModal) {
-                    registerModal.style.display = 'none';
-                } else if (event.target == searchModal) {
-                    searchModal.style.display = 'none';
-                    document.body.classList.remove('blurred');
-                }
-            });
-
-            const upcomingAwards = document.querySelector('.upcoming-awards');
-            const observer = new IntersectionObserver(entries => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        document.querySelectorAll('.petal').forEach(petal => {
-                            petal.classList.add('animate');
-                        });
-                    }
-                });
-            });
-
-            observer.observe(upcomingAwards);
-
-            // Carousel functionality
-            const carousel = document.querySelector('.carousel-track');
-            const carouselItems = document.querySelectorAll('.match');
-            const prevButton = document.querySelector('.carousel-prev');
-            const nextButton = document.querySelector('.carousel-next');
-            let scrollPosition = 0;
-            const itemWidth = carouselItems[0].offsetWidth + 20; // Width of a match item + gap
-
-            prevButton.addEventListener('click', () => {
-                scrollPosition = Math.max(scrollPosition - itemWidth, 0);
-                carousel.scrollTo({ left: scrollPosition, behavior: 'smooth' });
-            });
-
-            nextButton.addEventListener('click', () => {
-                scrollPosition = Math.min(scrollPosition + itemWidth, (carouselItems.length - 1) * itemWidth);
-                carousel.scrollTo({ left: scrollPosition, behavior: 'smooth' });
-            });
-
-            // Update scores dynamically
-            const updateScores = () => {
-                carouselItems.forEach(item => {
-                    const matchID = item.getAttribute('data-match-id');
-                    fetch(?matchID=${matchID}&action=getMatchEvents)
-                        .then(response => response.json())
-                        .then(data => {
-                            const scoreElement = item.querySelector('.score');
-                            const team1Goals = data[0]?.Goals || 0;
-                            const team2Goals = data[1]?.Goals || 0;
-                            scoreElement.textContent = ${team1Goals} : ${team2Goals};
-
-                            const statusElement = item.querySelector('.status');
-                            const matchDate = item.getAttribute('data-match-date');
-                            const matchTime = item.getAttribute('data-match-time');
-                            const matchDateTime = new Date(${matchDate}T${matchTime});
-                            const now = new Date();
-                            const timeDifference = Math.floor((now - matchDateTime) / 1000 / 60); // in minutes
-
-                            if (item.getAttribute('data-has-ended') == '1') {
-                                statusElement.textContent = 'Ended';
-                            } else if (timeDifference >= 140) {
-                                statusElement.textContent = 'Ended';
-                            } else if (timeDifference >= 0 && timeDifference < 140) {
-                                statusElement.textContent = 'On-going';
-                            } else {
-                                statusElement.textContent = 'Upcoming';
-                            }
-                        });
-                });
-            };
-
-            updateScores();
-
-            // Show match details in a modal
-            carouselItems.forEach(item => {
-                item.addEventListener('click', () => {
-                    const matchID = item.getAttribute('data-match-id');
-                    fetch(?matchID=${matchID}&action=getMatchDetails)
-                        .then(response => response.json())
-                        .then(data => {
-                            const modalContent = document.querySelector('#matchDetailContent');
-                            modalContent.innerHTML = data.map(event => 
-                                <p>${event.EventTime} - ${event.PlayerName} (${event.EventType})</p>
-                            ).join('');
-                            document.querySelector('#matchDetailModal').style.display = 'block';
-                        });
-                });
-            });
-
-            const closeMatchDetail = document.querySelector('.close-match-detail');
-            closeMatchDetail.addEventListener('click', () => {
-                document.querySelector('#matchDetailModal').style.display = 'none';
-            });
-
-            window.addEventListener('click', (event) => {
-                if (event.target == document.querySelector('#matchDetailModal')) {
-                    document.querySelector('#matchDetailModal').style.display = 'none';
-                }
-            });
-        });
-
-        function openRegisterModal() {
-            document.getElementById('loginModal').style.display = 'none';
-            document.getElementById('registerModal').style.display = 'block';
-        }
-
-        function openLoginModal() {
-            document.getElementById('registerModal').style.display = 'none';
-            document.getElementById('loginModal').style.display = 'block';
-        }
-
-        function toggleDropdown() {
-            document.getElementById("profileDropdown").classList.toggle("show");
-        }
-
-        window.onclick = function(event) {
-            if (!event.target.matches('.profile-name')) {
-                var dropdowns = document.getElementsByClassName("dropdown-content");
-                var i;
-                for (i = 0; i < dropdowns.length; i++) {
-                    var openDropdown = dropdowns[i];
-                    if (openDropdown.classList.contains('show')) {
-                        openDropdown.classList.remove('show');
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         body {
             margin: 0;
             font-family: Arial, sans-serif;
             background-color: white;
             padding-top: 80px; /* Space for the fixed header */
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 200px;
+            background-color: #4B0000;
+            padding: 20px;
+            height: 100vh;
+            position: fixed;
+            top: 80px; /* Below the navbar */
+            left: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar ul li {
+            margin-bottom: 15px;
+        }
+
+        .sidebar ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .sidebar ul li a:hover {
+            text-decoration: underline;
+        }
+
+        .main-content {
+            margin-left: 270px;
+            padding: 20px;
+            flex: 1;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #4B0000;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .toggle-buttons {
+            margin-bottom: 20px;
+        }
+
+        .toggle-buttons button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            color: white;
+        }
+
+        #male-button.active, #female-button.active {
+            background-color: #4B0000;
+        }
+
+        #male-button, #female-button {
+            background-color: #ccc;
+        }
+
+        .card-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            padding: 20px;
+            width: calc(33.333% - 40px); /* Responsive card width */
+            box-sizing: border-box;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .card img {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 10px;
+            border-radius: 50%; /* Make the logo round */
+        }
+
+        .card h3 {
+            margin: 0;
+            color: #4B0000;
+            font-size: 1.2rem; /* Smaller font size */
+            text-align: center;
+            text-decoration: underline; /* Make club names underlined */
+        }
+
+        .card p {
+            color: #666;
+            font-size: 0.9rem; /* Smaller font size */
+            text-align: center;
+        }
+
+        .actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .upload-logo, .delete-logo {
+            background-color: #1e90ff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            display: inline-block;
+            width: 100%;
+            text-align: center;
+        }
+
+        .delete-logo {
+            background-color: #ff4b4b;
         }
 
         .header-container {
@@ -421,7 +304,6 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
             font-size: 1rem;
             color: #4B0000;
             font-weight: bold;
-            cursor: pointer;
         }
 
         .dropdown-content {
@@ -429,1664 +311,12 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
             position: absolute;
             background-color: white;
             min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
             z-index: 1;
         }
 
-        .dropdown-content a {
-            color: black;
-            padding: 12px 16px;
-            text-decoration: none;
+        .profile-name:hover .dropdown-content {
             display: block;
-        }
-
-        .dropdown-content a:hover {background-color: #ddd;}
-
-        .show {display: block;}
-
-        .hero {
-            display: flex;
-            height: 60vh;
-            overflow: hidden;
-            position: relative;
-            margin-bottom: 20px;
-            width: 100vw;
-        }
-
-        .hero-text-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            background-color: #4B0000;
-            padding: 20px;
-            color: white;
-        }
-
-        .hero-text-container h1 {
-            font-size: 2rem;
-        }
-
-        .hero-text-container h2 {
-            font-size: 1.2rem;
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-
-        .cta-button {
-            display: inline-block;
-            padding: 8px 15px;
-            background-color: #1e90ff;
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-
-        .hero-image-container {
-            flex: 1;
-            position: relative;
-        }
-
-        .hero-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .arrow {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: rgba(255, 255, 255, 0.5); /* Transparent white */
-            color: white;
-            border: none;
-            font-size: 1.5rem; /* Adjust font size for thinner appearance */
-            line-height: 1; /* Adjust line height for better alignment */
-            cursor: pointer;
-            z-index: 3;
-            padding: 10px; /* Adjust padding as needed */
-            border-radius: 50%; /* Make it circular */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .left-arrow {
-            left: 10px;
-        }
-
-        .right-arrow {
-            right: 10px;
-        }
-
-        .follow-olympics {
-            padding: 60px;
-            border-radius: 5px;
-            margin-bottom: 30px;
-            margin-top: -50px; 
-        }
-
-        .follow-olympics h2 {
-            color: #800000;
-            text-align: center;
-        }
-
-        .carousel-container {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .carousel-track {
-            display: flex;
-            gap: 20px;
-            overflow-x: auto;
-            scroll-behavior: smooth;
-        }
-
-        .match {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            min-width: 200px;
-            transition: transform 0.3s;
-            flex: 0 0 auto; /* Ensure items don't shrink */
-        }
-
-        .match p {
-            margin: 10px 0;
-            color: #333;
-        }
-
-        .score {
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-
-        .status {
-            font-size: 1rem;
-            color: #800000;
-        }
-
-        .carousel-arrow {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: #800000;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 50%;
-            cursor: pointer;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .carousel-prev {
-            left: -50px; /* Adjust as needed to avoid overlap */
-        }
-
-        .carousel-next {
-            right: -50px; /* Adjust as needed to avoid overlap */
-        }
-
-        .top-stories {
-            padding: 90px;
-            background-color: #fff;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-
-        .top-stories-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            margin-bottom: 20px;
-        }
-
-        .top-stories h2 {
-            margin: 0;
-            color: #800000;
-            text-align: left;
-            margin-top:-100px;
-        }
-
-        .see-more {
-            text-decoration: none;
-            font-weight: bold;
-            color: #1e90ff;
-            transition: color 0.3s ease;
-            margin-left:1450px;
-        }
-
-        .see-more:hover {
-            color: #0056b3;
-        }
-
-        .stories-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: space-between;
-        }
-
-        .story {
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-        }
-
-        .story img {
-            width: 100%;
-            height: 200px;
-            border-radius: 5px;
-            object-fit: cover;
-        }
-
-        .main-story {
-            flex: 1 1 60%;
-        }
-
-        .main-story img {
-            height: 450px; 
-            width: 90%;
-        }
-
-        .side-stories {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            flex: 1 1 35%;
-            margin-left:-100px;
-        }
-
-        .side-story {
-            flex: 1 1 45%;
-        }
-
-        /* Upcoming Awards Events Section */
-        .upcoming-awards {
-            padding: 90px;
-            background-color: black;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            position: relative;
-        }
-
-        .upcoming-awards h2 {
-            margin: 0;
-            color: white;
-            text-align: left;
-            margin-bottom: 20px;
-        }
-
-        .awards-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-        }
-
-        .award-card {
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            width: 400px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .award-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        .award-image {
-            background-size: cover;
-            background-position: center;
-            height: 500px;
-        }
-
-        .award-info {
-            padding: 15px;
-            text-align: center;
-        }
-
-        .award-info h3 {
-            margin: 0;
-            color:  #666;
-        }
-
-        .award-info p {
-            margin: 5px 0;
-            color: #666;
-        }
-
-        .rankings-section {
-            padding: 60px;
-            border-radius: 5px;
-            background-color: #f0f0f0; /* Lighter background for better contrast */
-            margin-bottom: 50px; /* Reduce margin for a tighter look */
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a subtle shadow for depth */
-            margin-bottom:150px;
-            margin-top:100px;
-        }
-
-        .rankings-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .rankings-header h2 {
-            margin: 0;
-            color: #4B0000; /* Ashesi Sports Insight primary color */
-            font-size: 2rem; /* Increase font size for better visibility */
-        }
-
-        .rankings-container {
-            display: flex;
-            justify-content: space-between;
-            gap: 20px;
-            flex-wrap: wrap; /* Allow items to wrap for better responsiveness */
-        }
-
-        .rankings-container .rankings {
-            flex: 1;
-            background: linear-gradient(135deg, #4B0000, #388E3C); /* Original gradient with Ashesi maroon */
-            border-radius: 5px;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Consistent shadow with other elements */
-            color: white; /* White text for good contrast */
-        }
-
-        .rankings h3 {
-            color: white;
-            margin-bottom: 10px;
-            font-size: 1.5rem; /* Increase font size */
-        }
-
-        .rankings ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .rankings ul li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3); /* Lighter line for better visibility */
-        }
-
-        .rankings ul li span {
-            color: #f0f0f0; /* Lighten text color for contrast */
-        }
-
-        .rankings ul li img {
-            width: 40px; /* Slightly increase image size */
-            height: auto;
-            margin-right: 10px;
-        }
-
-        footer {
-            background-color: #4B0000;
-            color: white;
-            text-align: center;
-            padding: 10px 0;
-            border-radius: 5px;
-        }
-
-        .footer-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 10px;
-        }
-
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 10000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
-            padding-top: 60px;
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 400px;
-            border-radius: 5px;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .close:hover,
-        .close:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .modal-header,
-        .modal-footer {
-            padding: 10px;
-            color: white;
-            background-color: #4B0000;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .modal-header h2,
-        .modal-footer h3 {
-            margin: 0;
-        }
-
-        .modal-body {
-            padding: 10px 20px;
-        }
-
-        .modal-body input[type="text"],
-        .modal-body input[type="password"],
-        .modal-body input[type="email"] {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0 10px 0;
-            display: inline-block;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-
-        .modal-body button {
-            background-color: #1e90ff;
-            color: white;
-            padding: 14px 20px;
-            margin: 8px 0;
-            border: none;
-            cursor: pointer;
-            width: 100%;
-            border-radius: 5px;
-        }
-
-        .modal-body button:hover {
-            background-color: #0056b3;
-        }
-
-        .modal-body .social-login {
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .modal-body .social-login button {
-            width: 48%;
-            background-color: #3b5998; /* Facebook color */
-            color: white;
-        }
-
-        .modal-body .social-login button.google {
-            background-color: #db4a39; /* Google color */
-        }
-
-        .modal-body .social-login button:hover {
-            opacity: 0.8;
-        }
-
-        .modal-body label {
-            display: flex;
-            align-items: center;
-        }
-
-        .modal-body input[type="checkbox"] {
-            margin-right: 10px;
-        }
-
-        .modal-footer a {
-            color: #5e95df;
-            text-decoration: none;
-        }
-
-        .modal-footer a:hover {
-            text-decoration: underline;
-        }
-
-        /* Updated Search Modal Styles */
-        .search-modal {
-            display: none; /* Hidden by default */
-            position: fixed;
-            z-index: 10000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
-            backdrop-filter: blur(5px); /* This will create the blur effect */
-            justify-content: center;
-            align-items: center;
-        }
-
-        .search-container {
-            background-color: white;
-            padding: 27px;
-            border-radius: 1px;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-        }
-
-        .search-container p {
-            margin: 0;
-            padding-bottom: 10px;
-            font-size: 16px;
-            color: #333;
-        }
-
-        .search-container .search-input-wrapper {
-            position: relative;
-            width: 10%;
-        }
-
-        .search-container input[type="text"] {
-            width: 60%;
-            padding: 10px;
-            border: none;
-            border-bottom: 3px solid #4B0000;
-            outline: none;
-            font-size: 35px;
-            box-sizing: border-box;
-        }
-
-        .search-container input[type="text"]::placeholder {
-            color: #aaa;
-        }
-
-        .search-container .search-icon {
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 24px;
-        }
-
-        .close-search {
-            position: absolute;
-            top: 10px;
-            right: 80px;
-            font-size: 28px;
-            color: #aaa;
-            cursor: pointer;
-        }
-
-        .close-search:hover,
-        .close-search:focus {
-            color: black;
-        }
-
-        /* Upcoming Tournaments Section */
-        .upcoming-tournaments {
-            display: flex;
-            padding: 90px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            justify-content: space-between;
-        }
-
-        .upcoming-tournaments .tournaments-info {
-            flex: 1;
-        }
-
-        .upcoming-tournaments .tournaments-info h2 {
-            margin: 0;
-            color: #800000;
-            text-align: left;
-            margin-bottom: 20px;
-        }
-
-        .tournaments-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-
-        }
-        
-
-        .tournament-card {
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            width: 300px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .tournament-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        .tournament-image {
-            background-size: cover;
-            background-position: center;
-            height: 200px;
-        }
-
-        .tournament-info {
-            padding: 15px;
-            text-align: center;
-        }
-
-        .tournament-info h3 {
-            margin: 0;
-            color: #4B0000;
-        }
-
-        .tournament-info p {
-            margin: 5px 0;
-            color: #666;
-        }
-
-        .tournament-image-container {
-            flex: 1;
-            position: relative;
-        }
-
-        .tournament-image-container img {
-            width: 30%;
-            height: 100%;
-            object-fit: cover;
-            margin-left:500px;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <div class="header-container">
-            <div class="logo-container">
-                <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/246c29d2a7c8bff15a8f6206d9f7084c6018fa5a/Untitled_Artwork%204.png" alt="Ashesi Sports Insight Logo" class="logo">
-                <div class="site-title">Ashesi Sports Insight</div>
-            </div>
-            <nav>
-                <ul>
-                    <li>
-                        <a href="#">SPORTS</a>
-                        <ul>
-                             <li><a href="footballsport.php">Football</a></li>
-                            <li><a href="basketballsport.php">Basketball</a></li>
-                        </ul>
-                    </li>
-                    <li><a href="#">NEWS</a></li>
-                    <li><a href="#">RANKINGS</a></li>
-                    <li>
-                        <a href="#">TEAMS & COACHES</a>
-                        <ul>
-                            <li><a href="#">Teams</a></li>
-                            <li><a href="#">Coaches</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="#">PLAYER STATS</a>
-                        <ul>
-                            <li><a href="#">Statistics</a></li>
-                            <li><a href="#">Accomplishments</a></li>
-                        </ul>
-                    </li>
-                    <li><a href="#">UPCOMING EVENTS</a></li>
-                </ul>
-            </nav>
-            <div class="nav-icons">
-                <img src="https://cdn-icons-png.flaticon.com/512/54/54481.png" alt="Search Icon" class="search-icon">
-                <?php if (isset($_SESSION['coach_name'])): ?>
-                    <div class="profile-dropdown">
-                        <span class="profile-name" onclick="toggleDropdown()"><?php echo htmlspecialchars($_SESSION['coach_name']); ?></span>
-                        <div id="profileDropdown" class="dropdown-content">
-                            <a href="../../action/logout.php">Logout</a>
-                        </div>
-                    </div>
-                <?php else: ?>
-                    <img src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png" alt="Profile Icon" class="profile-icon">
-                <?php endif; ?>
-            </div>
-        </div>
-    </header>
-    <main>
-        <section class="hero">
-            <div class="hero-text-container">
-                <h1>Experience Ashesi's sports</h1>
-                <h2>Get all the latest news on football & basketball, teams, coaches, players statistics, matches and any upcoming sports events</h2>
-                <h1>Are you interested in sport but don't know where to start?</h1>
-                <p>Register interest in one of the sports we do at Ashesi</p>
-                <a href="#" class="cta-button">FIND YOUR SPORT AND CLUB TODAY</a>
-            </div>
-            <div class="hero-image-container">
-                <div class="hero-overlay"></div>
-                <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/80ce81b9f1d08f25148101e1b5579d0e00c86019/ashesifootimage.jpeg" alt="Ashesi Sports Image" class="hero-image">
-                <button class="arrow left-arrow">&#9664;</button>
-                <button class="arrow right-arrow">&#9654;</button>
-            </div>
-        </section>
-        
-        <section class="follow-olympics">
-            <h2>MATCHES</h2>
-            <div class="carousel-container">
-                <button class="carousel-arrow carousel-prev">&#9664;</button>
-                <div class="carousel-track">
-    <?php foreach ($matches as $match): ?>
-    <?php $scores = getMatchScores($conn, $match['MatchID']); ?>
-    <div class="match" data-match-id="<?php echo $match['MatchID']; ?>" data-match-date="<?php echo $match['Date']; ?>" data-match-time="<?php echo $match['Time']; ?>" data-has-ended="<?php echo $match['HasEnded']; ?>">
-        <p><?php echo htmlspecialchars($match['Date']); ?> - <?php echo htmlspecialchars($match['Time']); ?></p>
-        <h3><?php echo htmlspecialchars($match['Team1Name']); ?> vs <?php echo htmlspecialchars($match['Team2Name']); ?></h3>
-        <?php if (!empty($match['TournamentName'])): ?>
-            <p><?php echo htmlspecialchars($match['TournamentName']); ?></p>
-        <?php else: ?>
-            <p>Friendly Match</p>
-        <?php endif; ?>
-        <div class="score"><?php echo htmlspecialchars($scores['team1']); ?> : <?php echo htmlspecialchars($scores['team2']); ?></div>
-        <div class="status">
-            <?php echo checkMatchStatus($match); ?>
-        </div>
-    </div>
-    <?php endforeach; ?>
-</div>
-
-                <button class="carousel-arrow carousel-next">&#9654;</button>
-            </div>
-        </section>
-       <!-- Top Stories Section -->
-       <section class="top-stories">
-            <h2>TOP STORIES</h2>
-            <a href="all_stories.php" class="see-more">See More</a> <!-- Link to the page showing all stories -->
-            <div class="stories-container">
-                <?php if (!empty($recent_stories)): ?>
-                    <div class="story main-story">
-                        <a href="story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[0]['StoryID']); ?>">
-                            <img src="<?php echo htmlspecialchars(getImagePath($recent_stories[0]['ImagePath'])); ?>" alt="<?php echo htmlspecialchars($recent_stories[0]['Title']); ?>">
-                            <h3><?php echo htmlspecialchars($recent_stories[0]['Title']); ?></h3>
-                        </a>
-                    </div>
-                    <div class="side-stories">
-                        <?php for ($i = 1; $i < count($recent_stories); $i++): ?>
-                            <div class="story side-story">
-                                <a href="story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[$i]['StoryID']); ?>">
-                                    <img src="<?php echo htmlspecialchars(getImagePath($recent_stories[$i]['ImagePath'])); ?>" alt="<?php echo htmlspecialchars($recent_stories[$i]['Title']); ?>">
-                                    <h3><?php echo htmlspecialchars($recent_stories[$i]['Title']); ?></h3>
-                                </a>
-                            </div>
-                        <?php endfor; ?>
-                    </div>
-                <?php else: ?>
-                    <p>No stories available at the moment.</p>
-                <?php endif; ?>
-            </div>
-        </section>
-
-
-<section class="upcoming-awards">
-            <h2>UPCOMING EVENTS</h2>
-            <div class="awards-container">
-                <?php if (!empty($upcoming_awards)): ?>
-                    <?php foreach ($upcoming_awards as $award): ?>
-                        <div class="award-card">
-                            <div class="award-image" style="background-image: url('../../<?php echo htmlspecialchars($award['EventFlyerImage']); ?>');"></div>
-                            <div class="award-info">
-                                <h3><?php echo htmlspecialchars($award['EventName']); ?></h3>
-                                <p><?php echo htmlspecialchars($award['EventDate']); ?></p>
-                                <p><?php echo htmlspecialchars($award['Location']); ?></p>
-                                <p><?php echo htmlspecialchars($award['EventType']); ?></p>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <p>No upcoming awards at the moment.</p>
-                <?php endif; ?>
-            </div>
-        </section>
-
-        <section class="upcoming-tournaments">
-        <div class="tournaments-info">
-            <h2>UPCOMING TOURNAMENTS</h2>
-            <div class="tournaments-container">
-                <?php if (!empty($upcoming_tournaments)): ?>
-                    <?php foreach ($upcoming_tournaments as $tournament): ?>
-                        <div class="tournament-card">
-                            <div class="tournament-image" style="background-image: url('https://rawcdn.githack.com/Lesliekonlack/IgemImages/b6fa87c123e32e5cde47ff412c59e74d6216615f/pngtree-champion-tournament-logo-design-concept-vector-illustration-png-image_8152179.png.jpeg');"></div>
-                            <div class="tournament-info">
-                                <h3><?php echo htmlspecialchars($tournament['Name']); ?></h3>
-                                <p><?php echo htmlspecialchars($tournament['SportName']); ?></p>
-                                <p><?php echo htmlspecialchars($tournament['StartDate']); ?> - <?php echo htmlspecialchars($tournament['EndDate']); ?></p>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <p>No upcoming tournaments at the moment.</p>
-                <?php endif; ?>
-            </div>
-        </div>
-        <div class="tournament-image-container">
-            <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/90a505395a43cc861a9679f065dfd1398349a1bb/Image.heic" alt="Tournament Image">
-        </div>
-    </section>
-
-
-        <section class="rankings-section">
-            <div class="rankings-header">
-                <h2>Current Clubs Rankings</h2>
-            </div>
-            <div class="rankings-container">
-                <div class="rankings football-rankings">
-                    <h3>Football</h3>
-                    <ul>
-                        <li>
-                            <span>1</span> <img src="https://via.placeholder.com/30" alt="Eagles Logo"> Ashesi Eagles <span>1000 pts</span>
-                        </li>
-                        <li>
-                            <span>2</span> <img src="https://via.placeholder.com/30" alt="Falcons Logo"> Ashesi Falcons <span>950 pts</span>
-                        </li>
-                        <li>
-                            <span>3</span> <img src="https://via.placeholder.com/30" alt="Hawks Logo"> Ashesi Hawks <span>900 pts</span>
-                        </li>
-                        <!-- Add more football clubs here -->
-                    </ul>
-                </div>
-                <div class="rankings basketball-rankings">
-                    <h3>Basketball</h3>
-                    <ul>
-                        <li>
-                            <span>1</span> <img src="https://via.placeholder.com/30" alt="Panthers Logo"> Ashesi Panthers <span>1000 pts</span>
-                        </li>
-                        <li>
-                            <span>2</span> <img src="https://via.placeholder.com/30" alt="Tigers Logo"> Ashesi Tigers <span>950 pts</span>
-                        </li>
-                        <li>
-                            <span>3</span> <img src="https://via.placeholder.com/30" alt="Lions Logo"> Ashesi Lions <span>900 pts</span>
-                        </li>
-                        <!-- Add more basketball clubs here -->
-                    </ul>
-                </div>
-            </div>
-        </section>
-
-    </main>
-    <footer>
-        <div class="footer-container">
-            <p>&copy; 2024 Ashesi Sports Insight. All rights reserved.</p>
-        </div>
-    </footer>
-
-    <!-- Login Modal -->
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span class="close">&times;</span>
-                <h2>Ashesi Sports Insight Login</h2>
-            </div>
-
-            <div class="modal-body">
-                <form action="../../action/login_action.php" method="POST">
-                    <input type="email" name="email" placeholder="Email" required>
-                    <input type="password" name="password" placeholder="PassKey" required>
-                    <button type="submit">LOGIN</button>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <h5 style= "text-align: center;">Sport admins only </h5>
-            </div>
-        </div>
-    </div>
-
-
-
-    <!-- Search Modal -->
-    <div id="searchModal" class="search-modal">
-        <div class="search-container">
-            <span class="close-search">&times;</span>
-            <p style= "margin-left:-850px;" >What team are you looking for?</p>
-            <img style= "margin-left:330px; margin-top:15px;" src="https://cdn-icons-png.flaticon.com/512/54/54481.png" alt="Search Icon" class="search-icon">
-            <input type="text" placeholder="Type the team name here">
-        </div>
-    </div>
-
-    <!-- Match Detail Modal -->
-    <div id="matchDetailModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span class="close close-match-detail">&times;</span>
-                <h2>Match Details</h2>
-            </div>
-            <div class="modal-body" id="matchDetailContent">
-                <!-- Match details will be loaded here -->
-            </div>
-        </div>
-    </div>
-</body>
-</html>
-[07:15, 8/9/2024] Lulu: homepage.php
-[07:15, 8/9/2024] Lulu: please
-[07:18, 8/9/2024] Lulu: OKEY PUT BACB
-[07:18, 8/9/2024] Lulu: BACK
-[07:18, 8/9/2024] Lulu: THEN
-[07:18, 8/9/2024] Lulu: EVEB THE CREATION OF TEAMS, AT LEST CREAT ASHESI TEAMS AND COACHES
-[07:18, 8/9/2024] Lulu: THEN WE WILL BE UPLOADING THEIR THINGS OUR SELVES
-[08:58, 8/9/2024] Lulu: <?php
-session_start();
-include '../../settings/connection.php'; // Include your database connection file
-
-// Enable error reporting
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
-// Fetch team details
-$team = [];
-$team_id = isset($_GET['team_id']) ? (int)$_GET['team_id'] : null;
-
-if ($team_id) {
-    $sql = "SELECT t.*, c.Name AS CoachName, c.CoachImage 
-            FROM teams t 
-            LEFT JOIN coaches c ON t.CoachID = c.CoachID 
-            WHERE t.TeamID = ?";
-    try {
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([$team_id]);
-        $team = $stmt->fetch(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        echo 'Query failed: ' . $e->getMessage();
-        exit();
-    }
-}
-
-// Fetch players for the team
-$players = [];
-if ($team_id) {
-    $sql = "SELECT * FROM players WHERE TeamID = ?";
-    try {
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([$team_id]);
-        $players = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        echo 'Query failed: ' . $e->getMessage();
-        exit();
-    }
-}
-
-// Check if user is logged in and is a coach
-$is_coach = isset($_SESSION['coach_id']);
-$user_team_id = $is_coach && isset($_SESSION['team_id']) ? $_SESSION['team_id'] : null;
-
-// Handle file uploads and deletions
-function handleFileUpload($fieldName, $uploadDir) {
-    if (isset($_FILES[$fieldName]) && $_FILES[$fieldName]['error'] == UPLOAD_ERR_OK) {
-        $fileTmpPath = $_FILES[$fieldName]['tmp_name'];
-        $fileName = $_FILES[$fieldName]['name'];
-        $fileSize = $_FILES[$fieldName]['size'];
-        $fileType = $_FILES[$fieldName]['type'];
-        $fileNameCmps = explode(".", $fileName);
-        $fileExtension = strtolower(end($fileNameCmps));
-
-        $newFileName = md5(time() . $fileName) . '.' . $fileExtension;
-        $uploadFileDir = $uploadDir;
-        $dest_path = $uploadFileDir . $newFileName;
-
-        if (move_uploaded_file($fileTmpPath, $dest_path)) {
-            return $newFileName;
-        }
-    }
-    return null;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $response = [];
-
-    // Add new player
-    if (isset($_POST['new_player_name']) && $team_id == $user_team_id) {
-        $player_name = $_POST['new_player_name'];
-        $player_position = $_POST['new_player_position'];
-        $player_age = $_POST['new_player_age'];
-        $player_height = $_POST['new_player_height'];
-        $player_nationality = $_POST['new_player_nationality'];
-        $uploadedFileName = handleFileUpload('new_player_image', '../../uploads/');
-
-        $sql = "INSERT INTO players (Name, Position, Age, Height, Nationality, Image, TeamID, SportID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        try {
-            $stmt = $conn->prepare($sql);
-            $stmt->execute([$player_name, $player_position, $player_age, $player_height, $player_nationality, $uploadedFileName, $team_id, $team['SportID']]);
-
-            $player_id = $conn->lastInsertId();
-            if (isset($_POST['new_player_trophies']) && is_array($_POST['new_player_trophies'])) {
-                foreach ($_POST['new_player_trophies'] as $trophy) {
-                    if (!empty($trophy)) {
-                        list($year, $name) = explode('-', $trophy, 2);
-                        $sql = "INSERT INTO trophies (PlayerID, Year, Name) VALUES (?, ?, ?)";
-                        $stmt = $conn->prepare($sql);
-                        $stmt->execute([$player_id, $year, $name]);
-                    }
-                }
-            }
-
-            $response['status'] = 'success';
-            $response['message'] = 'Player added successfully.';
-            $response['player_id'] = $player_id;
-            $response['player_name'] = $player_name;
-            $response['player_position'] = $player_position;
-            $response['player_image'] = $uploadedFileName;
-        } catch (PDOException $e) {
-            $response['status'] = 'error';
-            $response['message'] = 'Insert failed: ' . $e->getMessage();
-        }
-
-        echo json_encode($response);
-        exit();
-    }
-
-    // Change player picture
-    if (isset($_POST['change_player_id']) && $team_id == $user_team_id) {
-        $player_id = (int)$_POST['change_player_id'];
-        $uploadedFileName = handleFileUpload('change_player_image', '../../uploads/');
-        if ($uploadedFileName) {
-            $sql = "UPDATE players SET Image = ? WHERE PlayerID = ?";
-            try {
-                $stmt = $conn->prepare($sql);
-                $stmt->execute([$uploadedFileName, $player_id]);
-                $response['status'] = 'success';
-                $response['message'] = 'Player picture updated successfully.';
-                $response['image'] = $uploadedFileName;
-            } catch (PDOException $e) {
-                $response['status'] = 'error';
-                $response['message'] = 'Update failed: ' . $e->getMessage();
-            }
-        } else {
-            $response['status'] = 'error';
-            $response['message'] = 'File upload failed.';
-        }
-
-        echo json_encode($response);
-        exit();
-    }
-
-    // Delete player
-    if (isset($_POST['delete_player_id']) && $team_id == $user_team_id) {
-        $player_id = (int)$_POST['delete_player_id'];
-        $sql = "DELETE FROM players WHERE PlayerID = ?";
-        try {
-            $stmt = $conn->prepare($sql);
-            $stmt->execute([$player_id]);
-            $response['status'] = 'success';
-            $response['message'] = 'Player deleted successfully.';
-            $response['player_id'] = $player_id;
-        } catch (PDOException $e) {
-            $response['status'] = 'error';
-            $response['message'] = 'Delete failed: ' . $e->getMessage();
-        }
-
-        echo json_encode($response);
-        exit();
-    }
-
-    // Handle other uploads and deletions
-    if (isset($_FILES['team_image']) && $team_id == $user_team_id) {
-        $uploadedFileName = handleFileUpload('team_image', '../../uploads/');
-        if ($uploadedFileName) {
-            $sql = "UPDATE teams SET TeamPhoto = ? WHERE TeamID = ?";
-            try {
-                $stmt = $conn->prepare($sql);
-                $stmt->execute([$uploadedFileName, $team_id]);
-                $response['status'] = 'success';
-                $response['message'] = 'Team photo updated successfully.';
-                $response['image'] = $uploadedFileName;
-            } catch (PDOException $e) {
-                $response['status'] = 'error';
-                $response['message'] = 'Update failed: ' . $e->getMessage();
-            }
-        } else {
-            $response['status'] = 'error';
-            $response['message'] = 'File upload failed.';
-        }
-
-        echo json_encode($response);
-        exit();
-    }
-
-    if (isset($_POST['delete_team_image']) && $team_id == $user_team_id) {
-        $sql = "UPDATE teams SET TeamPhoto = NULL WHERE TeamID = ?";
-        try {
-            $stmt = $conn->prepare($sql);
-            $stmt->execute([$team_id]);
-            $response['status'] = 'success';
-            $response['message'] = 'Team photo deleted successfully.';
-        } catch (PDOException $e) {
-            $response['status'] = 'error';
-            $response['message'] = 'Update failed: ' . $e->getMessage();
-        }
-
-        echo json_encode($response);
-        exit();
-    }
-
-    if (isset($_FILES['coach_image']) && $team_id == $user_team_id) {
-        $uploadedFileName = handleFileUpload('coach_image', '../../uploads/');
-        if ($uploadedFileName) {
-            $sql = "UPDATE coaches SET CoachImage = ? WHERE CoachID = ?";
-            try {
-                $stmt = $conn->prepare($sql);
-                $stmt->execute([$uploadedFileName, $team['CoachID']]);
-                $response['status'] = 'success';
-                $response['message'] = 'Coach photo updated successfully.';
-                $response['image'] = $uploadedFileName;
-            } catch (PDOException $e) {
-                $response['status'] = 'error';
-                $response['message'] = 'Update failed: ' . $e->getMessage();
-            }
-        } else {
-            $response['status'] = 'error';
-            $response['message'] = 'File upload failed.';
-        }
-
-        echo json_encode($response);
-        exit();
-    }
-
-    if (isset($_POST['delete_coach_image']) && $team_id == $user_team_id) {
-        $sql = "UPDATE coaches SET CoachImage = NULL WHERE CoachID = ?";
-        try {
-            $stmt = $conn->prepare($sql);
-            $stmt->execute([$team['CoachID']]);
-            $response['status'] = 'success';
-            $response['message'] = 'Coach photo deleted successfully.';
-        } catch (PDOException $e) {
-            $response['status'] = 'error';
-            $response['message'] = 'Update failed: ' . $e->getMessage();
-        }
-
-        echo json_encode($response);
-        exit();
-    }
-}
-
-// Function to get image path
-function getImagePath($image, $defaultImage) {
-    return $image ? '../../uploads/' . $image : $defaultImage;
-}
-?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Club Details - Ashesi Sports Insight</title>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: white;
-            padding-top: 30px;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .header-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: white;
-            padding: 5px 10px;
-            height: 80px;
-            border-radius: 1px;
-            z-index: 1000;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .logo-container {
-            height: 100%;
-            display: flex;
-            align-items: center;
-            margin-left: 20px;
-        }
-
-        .site-title {
-            font-size: 24px;
-            color: #4B0000;
-            margin-right: 20px;
-        }
-
-        .logo {
-            height: 100%;
-            margin-right: 10px;
-        }
-
-        nav ul {
-            list-style: none;
-            display: flex;
-            gap: 10px;
-            margin: 0;
-            padding: 0;
-        }
-
-        nav ul li {
-            position: relative;
-            display: inline-block;
-        }
-
-        nav ul li a {
-            color: #4B0000;
-            text-decoration: none;
-            font-weight: bold;
-            line-height: 20px;
-            padding: 0 15px;
-        }
-
-        nav ul li:hover > ul {
-            display: block;
-        }
-
-        nav ul ul {
-            display: none;
-            position: absolute;
-            background-color: white;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
-            z-index: 1000;
-        }
-
-        nav ul ul li {
-            display: block;
-            text-align: left;
-        }
-
-        nav ul ul li a {
-            color: #4B0000;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-        }
-
-        nav ul ul li a:hover {
-            background-color: #ddd;
-        }
-
-        .nav-icons img {
-            height: 28px;
-            cursor: pointer;
-        }
-
-        .nav-icons {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .profile-icon {
-            height: 24px;
-            cursor: pointer;
-        }
-
-        .sidebar {
-            width: 200px;
-            background-color: #4B0000;
-            padding: 20px;
-            height: 100vh;
-            position: fixed;
-            top: 80px;
-            left: 0;
-            overflow-y: auto;
-        }
-
-        .sidebar .team-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .sidebar .team-info img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-        }
-
-        .sidebar h2 {
-            color: white;
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-        }
-
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .sidebar ul li {
-            margin-bottom: 15px;
-        }
-
-        .sidebar ul li a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .sidebar ul li a:hover {
-            text-decoration: underline;
-        }
-
-        .main-content {
-            margin-left: 270px;
-            padding: 20px;
-            flex: 1;
-        }
-
-        .section {
-            margin-bottom: 40px;
-        }
-
-        .section h2 {
-            color: #4B0000;
-            font-size: 2rem;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .team-photo {
-            background-color: #4B0000;
-            background-image: url('https://www.transparenttextures.com/patterns/asfalt-dark.png'), linear-gradient(90deg, white 2px, transparent 2px), linear-gradient(white 2px, transparent 2px);
-            background-size: cover, 50px 50px, 50px 50px;
-            border-radius: 10px;
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 20px;
-            display: inline-block;
-            max-width: 58%;
-            margin-left: 260px;
-        }
-
-        .team-photo img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 10px;
-        }
-
-        .animation-container {
-            position: relative;
-            width: 98%;
-            margin-left: -10px;
-            height: 145vh;
-            overflow: visible; /* Ensure content is not clipped */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #88C057;
-            background-image: url('https://www.transparenttextures.com/patterns/asfalt-dark.png'), linear-gradient(90deg, white 2px, transparent 2px), linear-gradient(white 2px, transparent 2px);
-            background-size: cover, 50px 50px, 50px 50px;
-        }
-
-        
-        .central-logo {
-            position: absolute;
-            width: 200px;
-            height: 200px;
-            z-index: 10;
-            text-align: center;
-            font-size: 1.5rem;
-            color: #4B0000;
-        }
-
-        .orbiting-element {
-            position: absolute;
-            width: 310px;
-            height: 280px;
-            overflow: visible; /* Ensure content is not clipped */
-            transform-origin: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            text-align: center;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-
-        .orbiting-element img {
-            width: 50%;
-            height: auto;
-            border-radius: 50%;
-            margin-bottom: 10px;
-            z-index: 2;
-            position: relative;
-        }
-
-        .orbiting-element p.bottom {
-            margin: 0;
-            font-size: 1.5rem;
-            color: #4B0000;
-            text-align: center;
-            background-color: rgba(75, 5, 0, 0.3);
-            padding: 5px;
-            border-radius: 5px;
-            width: 50%;
-            position: absolute;
-            z-index: 1;
-        }
-
-        .orbiting-element p.top {
-            margin: 0;
-            font-size: 1.5rem;
-            color: #4B0000;
-            text-align: center;
-            background-color: rgba(75, 5, 0, 0.3);
-            padding: 5px;
-            border-radius: 5px;
-            width: 50%;
-            position: absolute;
-            z-index: 1;
-        }
-
-        .orbiting-element p.bottom {
-            top: 68%;
-        }
-
-        .orbiting-element p.top {
-            top: -100px; /* Adjust this value to move the text further up */
-        }
-
-        .orbiting-element img:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(255, 255, 0, 0.6), 0 10px 20px rgba(255, 255, 255, 0.5);
-            filter: brightness(1.2);
-        }
-
-        .orbiting-element.player4 p.top,
-        .orbiting-element.player7 p.top,
-        .orbiting-element.player15 p.top,
-        .orbiting-element.player18 p.top {
-            top: -60px; /* Ensure the text is visible above the images */
-        }
-
-        .outer {
-            transform-origin: 500px center;
-        }
-
-        .arrow {
-            position: absolute;
-            top: 50%;
-            z-index: 100;
-            cursor: pointer;
-            font-size: 2rem;
-            color: white;
-            padding: 10px;
-            background-color: rgba(0, 0, 0, 0.5);
-            border-radius: 50%;
-        }
-
-        .arrow.left {
-            left: 10px;
-        }
-
-        .arrow.right {
-            right: 10px;
-        }
-
-        .card-container1 {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 40px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            padding: 20px;
-            margin-bottom: 20px;
-            width: 200px;
-            text-align: center;
-        }
-
-        .card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        .card img {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            margin-bottom: 10px;
-        }
-
-        .card h3 {
-            margin: 0;
-            color: #4B0000;
-            font-size: 1.2rem;
-        }
-
-        .card p {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        footer {
-            background-color: #4B0000;
-            color: white;
-            text-align: center;
-            padding: 10px 0;
-            border-radius: 5px;
-            position: static;
-            bottom: 0;
-            width: 100%;
-        }
-
-        .footer-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 10px;
-        }
-
-        /* Modal Styles */
-        .modal {
-            display: none; /* Hidden by default */
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.5); /* Black background with opacity */
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: 15% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 600px;
-            border-radius: 10px;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .close:hover,
-        .close:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .player-info {
-            text-align: center;
-        }
-
-        .player-info h2 {
-            color: #4B0000;
-            font-size: 2rem;
-        }
-
-        .player-info p {
-            font-size: 1.2rem;
-        }
-
-        .see-more {
-            color: #4B0000;
-            font-weight: bold;
-            cursor: pointer;
-            text-decoration: underline;
-        }
-
-        .form-container {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .form-container input[type="file"] {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-        }
-
-        .form-container button {
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-            color: white;
-            background-color: #4B0000;
-            transition: background-color 0.3s ease;
-        }
-
-        .form-container button:hover {
-            background-color: #333;
-        }
-        /* Dropdown styling similar to footballsport.php */
-        .dropdown {
-            position: relative;
-            display: inline-block;
-        }
-
-        .dropbtn {
-            background-color: #4B0000;
-            color: white;
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: white;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
-            z-index: 1;
         }
 
         .dropdown-content a {
@@ -2100,14 +330,53 @@ function getImagePath($image, $defaultImage) {
             background-color: #ddd;
         }
 
-        .dropdown:hover .dropdown-content {
-            display: block;
+        footer {
+            background-color: #4B0000;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: auto; /* Push footer to the bottom */
         }
 
-        .dropdown:hover .dropbtn {
-            background-color: #3e8e41;
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 10px;
         }
     </style>
+    <script>
+        function toggleView(view) {
+            document.getElementById('male-clubs').style.display = view === 'male' ? 'flex' : 'none';
+            document.getElementById('female-clubs').style.display = view === 'female' ? 'flex' : 'none';
+
+            document.getElementById('male-button').classList.toggle('active', view === 'male');
+            document.getElementById('female-button').classList.toggle('active', view === 'female');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttons = document.querySelectorAll('.toggle-buttons button');
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    buttons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            const uploadForms = document.querySelectorAll('.upload-logo-form');
+            uploadForms.forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    const fileInput = this.querySelector('input[type="file"]');
+                    if (!fileInput.files.length) {
+                        event.preventDefault();
+                        alert('Please choose a file to upload.');
+                    }
+                });
+            });
+        });
+    </script>
 </head>
 <body>
     <header>
@@ -2115,33 +384,16 @@ function getImagePath($image, $defaultImage) {
             <div class="logo-container">
                 <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/246c29d2a7c8bff15a8f6206d9f7084c6018fa5a/Untitled_Artwork%204.png" alt="Ashesi Sports Insight Logo" class="logo">
                 <div class="site-title">Ashesi Sports Insight</div>
-                <nav>
-                <ul>
-                    <li>
-                        <a style="margin-left: 820px;"href="footballsport.php">Go Back To View All Clubs</a>
-                       
-                    </li>
-                   
-                    <li><a href="homepage.php">HOME</a></li>  
-                </nav>
             </div>
+         
             <div class="nav-icons">
-                <?php if (isset($_SESSION['coach_id'])): ?>
-                    <?php if ($is_coach && $user_team_id == $team_id): ?>
-                        <div class="dropdown">
-                            <button class="dropbtn">Welcome, <?php echo htmlspecialchars($_SESSION['coach_name']); ?></button>
-                            <div class="dropdown-content">
-                                <a href="../../action/logout.php">Logout</a>
-                            </div>
+                <img src="https://cdn-icons-png.flaticon.com/512/54/54481.png" alt="Search Icon" class="search-icon">
+                <?php if (isset($_SESSION['coach_name'])): ?>
+                    <span class="profile-name"><?php echo htmlspecialchars($_SESSION['coach_name']); ?>
+                        <div class="dropdown-content">
+                            <a href="../../action/logout.php">Logout</a>
                         </div>
-                    <?php else: ?>
-                        <div class="dropdown">
-                            <button class="dropbtn"><?php echo htmlspecialchars($_SESSION['coach_name']); ?></button>
-                            <div class="dropdown-content">
-                                <a href="../../settings/logout.php">Logout</a>
-                            </div>
-                        </div>
-                    <?php endif; ?>
+                    </span>
                 <?php else: ?>
                     <img src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png" alt="Profile Icon" class="profile-icon">
                 <?php endif; ?>
@@ -2149,526 +401,80 @@ function getImagePath($image, $defaultImage) {
         </div>
     </header>
     <div class="sidebar">
-        <div class="team-info">
-            <img src="<?php echo getImagePath($team['Logo'] ?? null, 'default_logo.png'); ?>" alt="Team Logo">
-            <h2><?php echo htmlspecialchars($team['TeamName'] ?? 'Football'); ?></h2>
-        </div>
+        <h2>Football</h2>
         <ul>
-            <li><a href="team_stories.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Stories</a></li>
-            <li><a href="teamstatistics.php?team_id=<?php echo htmlspecialchars($team['TeamID']); ?>">Team Stats</a></li>
-            <li><a href="players.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Players</a></li>
-            <li><a href="upcoming_matches.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Matches</a></li>
-            <li><a href="competitions.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Competitions</a></li>
-            <li><a href="awards.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Awards</a></li>
+            <li><a href="homepage.php">HOME</a></li>
+            <li><a href="basketballsport.php">Basketball Clubs</a></li>
         </ul>
     </div>
     <div class="main-content">
-        <section id="club-info" class="section">
-            <h2><?php echo htmlspecialchars($team['TeamName'] ?? 'Club Name'); ?></h2>
-            <div class="team-photo">
-                <img src="<?php echo getImagePath($team['TeamPhoto'] ?? null, 'default_team_photo.jpg'); ?>" alt="Team Photo" id="teamPhoto">
-            </div>
-            <?php if ($is_coach && $team && $team['TeamID'] == $user_team_id): ?>
-                <div class="form-container">
-                    <form id="teamPhotoForm" method="post" enctype="multipart/form-data">
-                        <input type="file" name="team_image" id="teamImageInput">
-                        <button type="submit">Upload Team Photo</button>
-                        <button type="button" id="deleteTeamPhotoButton">Delete Team Photo</button>
-                    </form>
-                </div>
-            <?php endif; ?>
-            <h2>Players</h2>
-            <div class="animation-container">
-                <?php if (count($players) > 11): ?>
-                    <div class="arrow left" onclick="showPreviousSet()">&#8592;</div>
-                <?php endif; ?>
-                <div class="central-logo">
-                    <p><?php echo htmlspecialchars($team['TeamName'] ?? 'Team Name'); ?></p>
-                </div>
+        <section id="welcome" class="section">
+            <h2>Welcome to the Football Insight of Ashesi</h2>
+            <p>Discover all the latest updates on your favorite football teams at Ashesi.</p>
+        </section>
 
-                <?php
-                foreach ($players as $index => $player):
-                    $set_class = $index < 11 ? 'set1' : 'set2';
-                    $circle_class = $index < 4 || ($index >= 11 && $index < 15) ? '' : 'outer';
-                    $position_class = in_array($index, [3, 6, 14, 17]) ? 'top' : 'bottom';
-                    ?>
-                    <div class="orbiting-element <?php echo $set_class . ' ' . $circle_class; ?>" data-player-id="<?php echo htmlspecialchars($player['PlayerID']); ?>" style="--i: <?php echo $index % 11; ?>;">
-                        <img src="<?php echo getImagePath($player['Image'] ?? null, 'placeholder.png'); ?>" alt="<?php echo htmlspecialchars($player['Name']); ?>">
-                        <p class="<?php echo $position_class; ?>"><?php echo htmlspecialchars($player['Name']); ?><br><?php echo htmlspecialchars($player['Position']); ?></p>
-                    </div>
+        <section id="clubs" class="section">
+            <h2>Football Clubs at Ashesi</h2>
+            <div class="toggle-buttons">
+                <button id="male-button" onclick="toggleView('male')" class="active">Male</button>
+                <button id="female-button" onclick="toggleView('female')">Female</button>
+            </div>
+
+            <div id="male-clubs" class="card-container">
+                <?php foreach ($teams as $team): ?>
+                    <?php if ($team['TeamGender'] === 'M'): ?>
+                        <div class="card">
+                            <img src="<?php echo htmlspecialchars(getLogoPath($team['Logo'])); ?>" alt="Team Logo" style="width:100px; height:100px;">
+                            <h3><a href="footballclub.php?team_id=<?php echo $team['TeamID']; ?>"><?php echo htmlspecialchars($team['TeamName']); ?></a></h3>
+                            <p>Coached by <?php echo htmlspecialchars($team['CoachName']); ?></p>
+                            <?php if ($is_coach && $user_team_id == $team['TeamID']): ?>
+                                <div class="actions">
+                                    <form class="upload-logo-form" action="../../action/upload_logo.php" method="POST" enctype="multipart/form-data">
+                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
+                                        <input type="file" name="team_logo">
+                                        <button type="submit" class="upload-logo">Upload Logo</button>
+                                    </form>
+                                    <form action="../../action/delete_logo.php" method="POST">
+                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
+                                        <button type="submit" class="delete-logo">Delete Logo</button>
+                                    </form>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 <?php endforeach; ?>
-
-                <?php if (count($players) > 11): ?>
-                    <div class="arrow right" onclick="showNextSet()">&#8594;</div>
-                <?php endif; ?>
             </div>
 
-            <?php if ($is_coach && $team && $team['TeamID'] == $user_team_id): ?>
-                <div class="form-container">
-                    <button onclick="openAddPlayerModal()">Add Player</button>
-                    <form id="deletePlayerForm" method="post">
-                        <select name="delete_player_id" id="playerSelect">
-                            <?php foreach ($players as $player): ?>
-                                <option value="<?php echo htmlspecialchars($player['PlayerID']); ?>"><?php echo htmlspecialchars($player['Name']); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <button type="submit" id="deletePlayerButton">Delete Player</button>
-                    </form>
-                    <form id="changePlayerPictureForm" method="post" enctype="multipart/form-data">
-                        <select name="change_player_id" id="changePlayerSelect">
-                            <?php foreach ($players as $player): ?>
-                                <option value="<?php echo htmlspecialchars($player['PlayerID']); ?>"><?php echo htmlspecialchars($player['Name']); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <input type="file" name="change_player_image" required>
-                        <button type="submit">Change Player Picture</button>
-                    </form>
-                </div>
-            <?php endif; ?>
-
-            <h2>Coach</h2>
-            <div class="card-container1">
-                <div class="card">
-                    <img src="<?php echo getImagePath($team['CoachImage'] ?? null, 'default_coach_photo.png'); ?>" alt="Coach Photo" id="coachPhoto">
-                    <h3><?php echo htmlspecialchars($team['CoachName'] ?? 'Coach Name'); ?></h3>
-                    <p>Coach</p>
-                </div>
+            <div id="female-clubs" class="card-container" style="display:none;">
+                <?php foreach ($teams as $team): ?>
+                    <?php if ($team['TeamGender'] === 'F'): ?>
+                        <div class="card">
+                            <img src="<?php echo htmlspecialchars(getLogoPath($team['Logo'])); ?>" alt="Team Logo" style="width:100px; height:100px;">
+                            <h3><a href="footballclub.php?team_id=<?php echo $team['TeamID']; ?>"><?php echo htmlspecialchars($team['TeamName']); ?></a></h3>
+                            <p>Coached by <?php echo htmlspecialchars($team['CoachName']); ?></p>
+                            <?php if ($is_coach && $user_team_id == $team['TeamID']): ?>
+                                <div class="actions">
+                                    <form class="upload-logo-form" action="../../action/upload_logo.php" method="POST" enctype="multipart/form-data">
+                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
+                                        <input type="file" name="team_logo">
+                                        <button type="submit" class="upload-logo">Upload Logo</button>
+                                    </form>
+                                    <form action="../../action/delete_logo.php" method="POST">
+                                        <input type="hidden" name="team_id" value="<?php echo $team['TeamID']; ?>">
+                                        <button type="submit" class="delete-logo">Delete Logo</button>
+                                    </form>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
             </div>
-
-            <?php if ($is_coach && $team && $team['TeamID'] == $user_team_id): ?>
-                <div class="form-container">
-                    <form id="coachPhotoForm" method="post" enctype="multipart/form-data">
-                        <input type="file" name="coach_image" id="coachImageInput">
-                        <button type="submit">Upload Coach Photo</button>
-                        <button type="button" id="deleteCoachPhotoButton">Delete Coach Photo</button>
-                    </form>
-                </div>
-            <?php endif; ?>
         </section>
     </div>
-
-    <!-- Modal for player details -->
-    <div id="playerModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <div class="player-info">
-                <img id="modalPlayerImage" src="" alt="Player Image" style="width: 100%; max-width: 200px; margin-bottom: 15px; border-radius: 50%;">
-                <h2 id="modalPlayerName">Player Name</h2>
-                <p id="modalPlayerPosition">Position</p>
-                <p id="modalPlayerDescription">Detailed description of the player, stats, history, etc.</p>
-                <a id="modalSeeMore" class="see-more" href="#" target="_blank">See More</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal for adding a player -->
-    <div id="addPlayerModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeAddPlayerModal()">&times;</span>
-            <div class="player-info">
-                <h2>Add New Player</h2>
-                <form id="addPlayerForm" method="post" enctype="multipart/form-data">
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                        <input type="text" name="new_player_name" placeholder="Player Name" required style="flex: 1; min-width: 200px;">
-                        <input type="text" name="new_player_position" placeholder="Player Position" required style="flex: 1; min-width: 200px;">
-                        <input type="number" name="new_player_age" placeholder="Player Age" required style="flex: 1; min-width: 100px;">
-                        <input type="text" name="new_player_height" placeholder="Player Height" required style="flex: 1; min-width: 100px;">
-                        <input type="text" name="new_player_nationality" placeholder="Player Country Of Origin" required style="flex: 1; min-width: 200px;">
-                    </div>
-                    <h3 style="margin-top: 20px;">Trophies</h3>
-                    <div id="trophiesContainer">
-                        <input type="text" name="new_player_trophies[]" placeholder="Trophies (format: year-name)" style="width: calc(100% - 100px);">
-                    </div>
-                    <button type="button" onclick="addTrophyField()" style="margin-top: 10px;">Add Trophy</button>
-                    <br>
-                    <input type="file" name="new_player_image" required style="margin-top: 20px;">
-                    <br>
-                    <button type="submit" style="margin-top: 20px;">Add Player</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <footer>
         <div class="footer-container">
             <p>&copy; 2024 Ashesi Sports Insight. All rights reserved.</p>
         </div>
     </footer>
-    <script>
-    function addTrophyField() {
-        var container = document.getElementById('trophiesContainer');
-        var input = document.createElement('input');
-        input.type = 'text';
-        input.name = 'new_player_trophies[]';
-        input.placeholder = 'Trophies (format: year-name)';
-        input.style = 'width: calc(100% - 100px); margin-top: 10px;';
-        container.appendChild(input);
-    }
-    </script>
-    <script>
-    document.getElementById('addTrophyButton').addEventListener('click', function() {
-        const trophyContainer = document.getElementById('trophiesContainer');
-        const newTrophyField = document.createElement('div');
-        newTrophyField.classList.add('trophy-field');
-        newTrophyField.innerHTML = `
-            <input type="text" name="new_player_trophies[]" placeholder="Trophies (format: number-year-trophy_name)">
-            <button type="button" class="removeTrophyButton">Remove</button>
-        `;
-        trophyContainer.appendChild(newTrophyField);
-    });
-
-    document.getElementById('trophiesContainer').addEventListener('click', function(event) {
-        if (event.target && event.target.classList.contains('removeTrophyButton')) {
-            event.target.parentNode.remove();
-        }
-    });
-    </script>
-
-
-    <script>
-        const set1 = document.querySelectorAll('.orbiting-element.set1');
-        const set2 = document.querySelectorAll('.orbiting-element.set2');
-        let showingSet1 = true;
-
-        function showNextSet() {
-            if (showingSet1) {
-                set1.forEach(el => {
-                    el.style.opacity = 0;
-                    el.style.pointerEvents = 'none'; // Disable interactions for hidden set
-                });
-                set2.forEach(el => {
-                    el.style.opacity = 1;
-                    el.style.pointerEvents = 'auto'; // Enable interactions for visible set
-                });
-                showingSet1 = false;
-            }
-        }
-
-        function showPreviousSet() {
-            if (!showingSet1) {
-                set1.forEach(el => {
-                    el.style.opacity = 1;
-                    el.style.pointerEvents = 'auto';
-                });
-                set2.forEach(el => {
-                    el.style.opacity = 0;
-                    el.style.pointerEvents = 'none';
-                });
-                showingSet1 = true;
-            }
-        }
-
-        window.addEventListener('scroll', function () {
-            const scrollPosition = window.scrollY;
-            const windowHeight = window.innerHeight;
-            const animationContainer = document.querySelector('.animation-container');
-            const containerTop = animationContainer.offsetTop;
-            const containerHeight = animationContainer.offsetHeight;
-
-            if (scrollPosition + windowHeight > containerTop && scrollPosition < containerTop + containerHeight) {
-                const scrollFraction = (scrollPosition + windowHeight - containerTop) / (containerHeight + windowHeight);
-                const innerElements1 = document.querySelectorAll('.orbiting-element.set1:not(.outer)');
-                const outerElements1 = document.querySelectorAll('.orbiting-element.set1.outer');
-                const innerElements2 = document.querySelectorAll('.orbiting-element.set2:not(.outer)');
-                const outerElements2 = document.querySelectorAll('.orbiting-element.set2.outer');
-
-                const numInnerElements1 = innerElements1.length;
-                const numOuterElements1 = outerElements1.length;
-                const numInnerElements2 = innerElements2.length;
-                const numOuterElements2 = outerElements2.length;
-
-                const angleStepInner1 = 360 / numInnerElements1;
-                const angleStepOuter1 = 360 / numOuterElements1;
-                const angleStepInner2 = 360 / numInnerElements2;
-                const angleStepOuter2 = 360 / numOuterElements2;
-
-                innerElements1.forEach((element, index) => {
-                    const orbitRotation = scrollFraction * 360 + angleStepInner1 * index;
-                    element.style.transform = rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg);
-                });
-
-                outerElements1.forEach((element, index) => {
-                    const orbitRotation = scrollFraction * 360 + angleStepOuter1 * index;
-                    element.style.transform = rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg);
-                });
-
-                innerElements2.forEach((element, index) => {
-                    const orbitRotation = scrollFraction * 360 + angleStepInner2 * index;
-                    element.style.transform = rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg);
-                });
-
-                outerElements2.forEach((element, index) => {
-                    const orbitRotation = scrollFraction * 360 + angleStepOuter2 * index;
-                    element.style.transform = rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg);
-                });
-            }
-        });
-
-        // Initialize the visibility of the elements
-        set1.forEach(el => {
-            el.style.opacity = 1;
-            el.style.pointerEvents = 'auto';
-        });
-        set2.forEach(el => {
-            el.style.opacity = 0;
-            el.style.pointerEvents = 'none';
-        });
-
-        // Modal functionality
-        const modal = document.getElementById("playerModal");
-        const closeModal = document.querySelector(".modal .close");
-
-        
-
-        // Function to open modal with player info
-        function openModal(playerName, playerPosition, playerDescription, playerImage, playerMoreLink) {
-            document.getElementById("modalPlayerName").textContent = playerName;
-            document.getElementById("modalPlayerPosition").textContent = playerPosition;
-            document.getElementById("modalPlayerDescription").textContent = playerDescription;
-            document.getElementById("modalPlayerImage").src = playerImage;
-            document.getElementById("modalSeeMore").href = playerMoreLink;
-            modal.style.display = "block";
-        }
-
-        // Close the modal
-        closeModal.onclick = function() {
-            modal.style.display = "none";
-        }
-
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                modal.style.display = "none";
-            }
-        }
-
-        // Attach click event listeners to each player element
-        document.querySelectorAll('.orbiting-element').forEach(player => {
-            player.addEventListener('click', () => {
-                const playerName = player.getAttribute('data-player-name');
-                const playerPosition = player.getAttribute('data-player-position');
-                const playerDescription = player.getAttribute('data-player-description');
-                const playerImage = player.querySelector('img').src; // Assuming the image source is the same
-                const playerId = player.getAttribute('data-player-id'); // Unique identifier for the player
-
-                // Set the correct URL path for the "See More" link
-                const playerMoreLink = http://localhost/Ashesi_Sport_Analysis/view/pages/seemore.php?player=${playerId};
-
-                if ((showingSet1 && player.classList.contains('set1')) || (!showingSet1 && player.classList.contains('set2'))) {
-                    openModal(playerName, playerPosition, playerDescription, playerImage, playerMoreLink);
-                }
-            });
-        });
-
-        // Functionality for Add Player Modal
-        const addPlayerModal = document.getElementById("addPlayerModal");
-        const closeAddPlayerModalBtn = document.querySelector("#addPlayerModal .close");
-
-        function openAddPlayerModal() {
-            addPlayerModal.style.display = "block";
-        }
-
-        function closeAddPlayerModal() {
-            addPlayerModal.style.display = "none";
-        }
-
-        window.onclick = function(event) {
-            if (event.target == addPlayerModal) {
-                addPlayerModal.style.display = "none";
-            }
-        }
-
-        // Handle form submissions with AJAX to avoid page reloads
-        document.getElementById('teamPhotoForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const formData = new FormData(this);
-            if (!document.getElementById('teamImageInput').files.length) {
-                alert('Please choose a file to upload.');
-                return;
-            }
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert(data.message);
-                    document.getElementById('teamPhoto').src = ../../uploads/${data.image};
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        });
-
-        document.getElementById('deleteTeamPhotoButton').addEventListener('click', function() {
-            const teamPhoto = document.getElementById('teamPhoto').src;
-            if (teamPhoto.includes('default_team_photo.jpg')) {
-                alert('No team photo to delete.');
-                return;
-            }
-            const formData = new FormData();
-            formData.append('delete_team_image', '1');
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert(data.message);
-                    document.getElementById('teamPhoto').src = 'default_team_photo.jpg';
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        });
-
-        document.getElementById('coachPhotoForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const formData = new FormData(this);
-            if (!document.getElementById('coachImageInput').files.length) {
-                alert('Please choose a file to upload.');
-                return;
-            }
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert(data.message);
-                    document.getElementById('coachPhoto').src = ../../uploads/${data.image};
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        });
-
-        document.getElementById('deleteCoachPhotoButton').addEventListener('click', function() {
-            const coachPhoto = document.getElementById('coachPhoto').src;
-            if (coachPhoto.includes('default_coach_photo.png')) {
-                alert('No coach photo to delete.');
-                return;
-            }
-            const formData = new FormData();
-            formData.append('delete_coach_image', '1');
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert(data.message);
-                    document.getElementById('coachPhoto').src = 'default_coach_photo.png';
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        });
-
-        document.getElementById('deletePlayerForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            if (confirm('Are you sure you want to delete this player? This action cannot be undone and will delete everything about this player.')) {
-                const formData = new FormData(this);
-                if (!validateSelection('playerSelect', 'No player selected to delete.')) {
-                    return;
-                }
-                fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        alert(data.message);
-                        const playerElement = document.querySelector(.orbiting-element[data-player-id='${data.player_id}']);
-                        if (playerElement) {
-                            playerElement.remove();
-                        }
-                        document.querySelector(#playerSelect option[value='${data.player_id}']).remove();
-                        document.querySelector(#changePlayerSelect option[value='${data.player_id}']).remove();
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-            }
-        });
-
-        document.getElementById('changePlayerPictureForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const formData = new FormData(this);
-            if (!validateSelection('changePlayerSelect', 'No player selected to change picture.')) {
-                return;
-            }
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert(data.message);
-                    const playerElement = document.querySelector(.orbiting-element[data-player-id='${formData.get('change_player_id')}'] img);
-                    if (playerElement) {
-                        playerElement.src = ../../uploads/${data.image};
-                    }
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        });
-
-        document.getElementById('addPlayerForm').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const formData = new FormData(this);
-    if (!validateFileInput('new_player_image', 'Please select an image for the new player.')) { // Make sure this ID is correct
-        return;
-    }
-
-    fetch(window.location.href, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            alert(data.message);
-            window.location.reload(); // Reload the page to show the new player
-        } else {
-            alert(data.message);
-        }
-    })
-    .catch(error => console.error('Error:', error));
-});
-
-        // Replace this function:
-function validateFileInput(inputId, message) {
-    const input = document.querySelector(input[name="${inputId}"]);
-    if (!input || !input.files.length) { // Updated condition to check if a file has been selected
-        alert(message);
-        return false;
-    }
-    return true;
-}
-
-// Ensure the correct ID is used when calling this function during the form submission.
-
-        function validateSelection(selectId, message) {
-            const select = document.getElementById(selectId);
-            if (!select || !select.value) {
-                alert(message);
-                return false;
-            }
-            return true;
-        }
-    </script>
 </body>
 </html>
