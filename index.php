@@ -6,7 +6,7 @@ $tournaments_sql = "SELECT * FROM tournaments";
 $tournaments_stmt = $conn->prepare($tournaments_sql);
 $tournaments_stmt->execute();
 $tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
-
+include 'settings/connection.php';
 // Fetch upcoming matches
 $sql = "SELECT m.MatchID, m.Date, m.Time, m.SportID, m.Team1ID, m.Team2ID, m.TournamentID, 
                t1.TeamName as Team1Name, t2.TeamName as Team2Name, s.SportName, 
