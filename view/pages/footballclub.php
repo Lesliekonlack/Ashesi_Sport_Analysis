@@ -794,7 +794,7 @@ function getImagePath($image, $defaultImage) {
             <h2><?php echo htmlspecialchars($team['TeamName'] ?? 'Football'); ?></h2>
         </div>
         <ul>
-            <li><a href="teamstories.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Stories</a></li>
+            <li><a href="team_stories.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Stories</a></li>
             <li><a href="teamstatistics.php?team_id=<?php echo htmlspecialchars($team['TeamID']); ?>">Team Stats</a></li>
             <li><a href="players.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Players</a></li>
             <li><a href="upcoming_matches.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Matches</a></li>
