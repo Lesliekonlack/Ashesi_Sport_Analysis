@@ -53,7 +53,7 @@ $recent_stories = $stories_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Function to get image path, ensuring it exists
 function getImagePath($imagePath) {
-    $defaultImagePath = '../../uploads/default_image.png'; // Replace with your default image path
+    $defaultImagePath = 'uploads/default_image.png'; // Replace with your default image path
     if ($imagePath && file_exists(__DIR__ . '/../../' . $imagePath)) {
         return '../../' . $imagePath;
     }
@@ -1276,7 +1276,7 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
             </div>
 
             <div class="modal-body">
-                <form action="../../action/login_action.php" method="POST">
+                <form action="action/login_action.php" method="POST">
                     <input type="email" name="email" placeholder="Email" required>
                     <input type="password" name="password" placeholder="PassKey" required>
                     <button type="submit">LOGIN</button>
