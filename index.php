@@ -53,7 +53,7 @@ $recent_stories = $stories_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Function to get image path, ensuring it exists
 function getImagePath($imagePath) {
-    $defaultImagePath = 'uploads/default_image.png'; // Replace with your default image path
+    $defaultImagePath = '../../uploads/default_image.png'; // Replace with your default image path
     if ($imagePath && file_exists(__DIR__ . '/../../' . $imagePath)) {
         return '../../' . $imagePath;
     }
@@ -1101,7 +1101,7 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                     <li>
                         <a href="#">SPORTS</a>
                         <ul>
-                             <li><a href="footballsport.php">Football</a></li>
+                             <li><a href="view/pagesfootballsport.php">Football</a></li>
                             <li><a href="basketballsport.php">Basketball</a></li>
                         </ul>
                     </li>
