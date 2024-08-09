@@ -30,7 +30,7 @@ $user_team_id = $is_coach && isset($_SESSION['team_id']) ? $_SESSION['team_id'] 
 // Function to get logo path
 function getLogoPath($logo) {
     $defaultLogo = 'default_logo.png'; // Ensure this file exists in the appropriate directory
-    if ($logo && file_exists(_DIR_ . '/../../uploads/' . $logo)) {
+    if ($logo && file_exists(__DIR__ . '/../../uploads/' . $logo)) {
         return '../../uploads/' . $logo;
     }
     return $defaultLogo;
@@ -368,29 +368,11 @@ function getLogoPath($logo) {
             const uploadForms = document.querySelectorAll('.upload-logo-form');
             uploadForms.forEach(form => {
                 form.addEventListener('submit', function(event) {
-                    event.preventDefault();
-                    const formData = new FormData(this);
                     const fileInput = this.querySelector('input[type="file"]');
-
                     if (!fileInput.files.length) {
+                        event.preventDefault();
                         alert('Please choose a file to upload.');
-                        return;
                     }
-
-                    fetch(this.action, {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert(data.message);
-                            location.reload(); // Reload the page to reflect changes
-                        } else {
-                            alert(data.message);
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
                 });
             });
         });
