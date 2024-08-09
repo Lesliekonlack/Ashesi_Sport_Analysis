@@ -1185,7 +1185,7 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
        <!-- Top Stories Section -->
        <section class="top-stories">
             <h2>TOP STORIES</h2>
-            <a href="all_stories.php" class="see-more">See More</a> <!-- Link to the page showing all stories -->
+            <a href="view/pages/all_stories.php" class="see-more">See More</a> <!-- Link to the page showing all stories -->
             <div class="stories-container">
                 <?php if (!empty($recent_stories)): ?>
                     <div class="story main-story">
@@ -1197,7 +1197,7 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                     <div class="side-stories">
                         <?php for ($i = 1; $i < count($recent_stories); $i++): ?>
                             <div class="story side-story">
-                                <a href="story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[$i]['StoryID']); ?>">
+                                <a href="view/pages/story_details.php?story_id=<?php echo htmlspecialchars($recent_stories[$i]['StoryID']); ?>">
                                     <img src="<?php echo htmlspecialchars(getImagePath($recent_stories[$i]['ImagePath'])); ?>" alt="<?php echo htmlspecialchars($recent_stories[$i]['Title']); ?>">
                                     <h3><?php echo htmlspecialchars($recent_stories[$i]['Title']); ?></h3>
                                 </a>
