@@ -1186,7 +1186,7 @@ if (isset($_GET['matchID']) && isset($_GET['action'])) {
                     <div class="profile-dropdown">
                         <span class="profile-name" onclick="toggleDropdown()"><?php echo htmlspecialchars($_SESSION['coach_name']); ?></span>
                         <div id="profileDropdown" class="dropdown-content">
-                            <a href="../../action/logout.php">Logout</a>
+                            <a href="action/logout.php">Logout</a>
                         </div>
                     </div>
                 <?php else: ?>
