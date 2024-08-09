@@ -8,11 +8,8 @@ $tournaments_stmt = $conn->prepare($tournaments_sql);
 $tournaments_stmt->execute();
 $tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-<<<<<<< HEAD
-include 'settings/connection.php';
-=======
 include '../../settings/connection.php';
->>>>>>> 11bf3c5efbdadedb41829bbd352aecce1e3be973
+
 
 // Function to fetch scores for each match
 function getMatchScores($conn, $matchID) {
