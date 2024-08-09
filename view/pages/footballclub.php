@@ -68,72 +68,6 @@ function handleFileUpload($fieldName, $uploadDir) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $response = [];
 
-    // Add new player
-    // Add new player
-if (isset($_POST['new_player_name']) && $team_id == $user_team_id) {
-    $player_name = $_POST['new_player_name'];
-    $player_position = $_POST['new_player_position'];
-    $player_age = $_POST['new_player_age'];
-    $player_height = $_POST['new_player_height'];
-    $player_nationality = $_POST['new_player_nationality'];
-    $uploadedFileName = handleFileUpload('new_player_image', '../../uploads/');
-
-    $sql = "INSERT INTO players (Name, Position, Age, Height, Nationality, Image, TeamID, SportID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-    try {
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([$player_name, $player_position, $player_age, $player_height, $player_nationality, $uploadedFileName, $team_id, $team['SportID']]);
-
-        $player_id = $conn->lastInsertId();
-        if (isset($_POST['new_player_trophies']) && is_array($_POST['new_player_trophies'])) {
-            foreach ($_POST['new_player_trophies'] as $trophy) {
-                if (!empty($trophy)) {
-                    list($year, $name) = explode('-', $trophy, 2);
-                    $sql = "INSERT INTO trophies (PlayerID, Year, Name) VALUES (?, ?, ?)";
-                    $stmt = $conn->prepare($sql);
-                    $stmt->execute([$player_id, $year, $name]);
-                }
-            }
-        }
-
-        // Redirect to the same page to reload it
-        header("Location: " . $_SERVER['REQUEST_URI']);
-        exit();
-    } catch (PDOException $e) {
-        $response['status'] = 'error';
-        $response['message'] = 'Insert failed: ' . $e->getMessage();
-    }
-
-    echo json_encode($response);
-    exit();
-}
-
-    
-
-    // Change player picture
-    if (isset($_POST['change_player_id']) && $team_id == $user_team_id) {
-        $player_id = (int)$_POST['change_player_id'];
-        $uploadedFileName = handleFileUpload('change_player_image', '../../uploads/');
-        if ($uploadedFileName) {
-            $sql = "UPDATE players SET Image = ? WHERE PlayerID = ?";
-            try {
-                $stmt = $conn->prepare($sql);
-                $stmt->execute([$uploadedFileName, $player_id]);
-                $response['status'] = 'success';
-                $response['message'] = 'Player picture updated successfully.';
-                $response['image'] = $uploadedFileName;
-            } catch (PDOException $e) {
-                $response['status'] = 'error';
-                $response['message'] = 'Update failed: ' . $e->getMessage();
-            }
-        } else {
-            $response['status'] = 'error';
-            $response['message'] = 'File upload failed.';
-        }
-
-        echo json_encode($response);
-        exit();
-    }
-
     // Handle other uploads and deletions
     if (isset($_FILES['team_image']) && $team_id == $user_team_id) {
         $uploadedFileName = handleFileUpload('team_image', '../../uploads/');
@@ -172,27 +106,7 @@ if (isset($_POST['new_player_name']) && $team_id == $user_team_id) {
         echo json_encode($response);
         exit();
     }
-    if (isset($_POST['delete_player_id']) && $team_id == $user_team_id) {
-        if (!empty($_POST['delete_player_id'])) {
-            $player_id = (int)$_POST['delete_player_id'];
-            $sql = "DELETE FROM players WHERE PlayerID = ?";
-            try {
-                $stmt = $conn->prepare($sql);
-                $stmt->execute([$player_id]);
-                $response['status'] = 'success';
-                $response['message'] = 'Player deleted successfully.';
-                $response['player_id'] = $player_id;
-            } catch (PDOException $e) {
-                $response['status'] = 'error';
-                $response['message'] = 'Delete failed: ' . $e->getMessage();
-            }
-        } else {
-            $response['status'] = 'error';
-            $response['message'] = 'No player selected to delete.';
-        }
-        echo json_encode($response);
-        exit();
-    }
+
     if (isset($_FILES['coach_image']) && $team_id == $user_team_id) {
         $uploadedFileName = handleFileUpload('coach_image', '../../uploads/');
         if ($uploadedFileName) {
@@ -215,6 +129,7 @@ if (isset($_POST['new_player_name']) && $team_id == $user_team_id) {
         echo json_encode($response);
         exit();
     }
+
     if (isset($_POST['delete_coach_image']) && $team_id == $user_team_id) {
         $sql = "UPDATE coaches SET CoachImage = NULL WHERE CoachID = ?";
         try {
@@ -1025,22 +940,22 @@ function getImagePath($image, $defaultImage) {
 
                 innerElements1.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepInner1 * index;
-                    element.style.transform = `rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg)`;
+                    element.style.transform = rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg);
                 });
 
                 outerElements1.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepOuter1 * index;
-                    element.style.transform = `rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg)`;
+                    element.style.transform = rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg);
                 });
 
                 innerElements2.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepInner2 * index;
-                    element.style.transform = `rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg)`;
+                    element.style.transform = rotate(${orbitRotation}deg) translate(300px) rotate(-${orbitRotation}deg);
                 });
 
                 outerElements2.forEach((element, index) => {
                     const orbitRotation = scrollFraction * 360 + angleStepOuter2 * index;
-                    element.style.transform = `rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg)`;
+                    element.style.transform = rotate(${orbitRotation}deg) translate(500px) rotate(-${orbitRotation}deg);
                 });
             }
         });
@@ -1092,7 +1007,7 @@ function getImagePath($image, $defaultImage) {
                 const playerId = player.getAttribute('data-player-id'); // Unique identifier for the player
 
                 // Set the correct URL path for the "See More" link
-                const playerMoreLink = `http://localhost/Ashesi_Sport_Analysis/view/pages/seemore.php?player=${playerId}`;
+                const playerMoreLink = http://localhost/Ashesi_Sport_Analysis/view/pages/seemore.php?player=${playerId};
 
                 if ((showingSet1 && player.classList.contains('set1')) || (!showingSet1 && player.classList.contains('set2'))) {
                     openModal(playerName, playerPosition, playerDescription, playerImage, playerMoreLink);
@@ -1134,7 +1049,7 @@ function getImagePath($image, $defaultImage) {
             .then(data => {
                 if (data.status === 'success') {
                     alert(data.message);
-                    document.getElementById('teamPhoto').src = `../../uploads/${data.image}`;
+                    document.getElementById('teamPhoto').src = ../../uploads/${data.image};
                 } else {
                     alert(data.message);
                 }
@@ -1181,7 +1096,7 @@ function getImagePath($image, $defaultImage) {
             .then(data => {
                 if (data.status === 'success') {
                     alert(data.message);
-                    document.getElementById('coachPhoto').src = `../../uploads/${data.image}`;
+                    document.getElementById('coachPhoto').src = ../../uploads/${data.image};
                 } else {
                     alert(data.message);
                 }
@@ -1228,12 +1143,12 @@ function getImagePath($image, $defaultImage) {
                 .then(data => {
                     if (data.status === 'success') {
                         alert(data.message);
-                        const playerElement = document.querySelector(`.orbiting-element[data-player-id='${data.player_id}']`);
+                        const playerElement = document.querySelector(.orbiting-element[data-player-id='${data.player_id}']);
                         if (playerElement) {
                             playerElement.remove();
                         }
-                        document.querySelector(`#playerSelect option[value='${data.player_id}']`).remove();
-                        document.querySelector(`#changePlayerSelect option[value='${data.player_id}']`).remove();
+                        document.querySelector(#playerSelect option[value='${data.player_id}']).remove();
+                        document.querySelector(#changePlayerSelect option[value='${data.player_id}']).remove();
                     } else {
                         alert(data.message);
                     }
@@ -1256,9 +1171,9 @@ function getImagePath($image, $defaultImage) {
             .then(data => {
                 if (data.status === 'success') {
                     alert(data.message);
-                    const playerElement = document.querySelector(`.orbiting-element[data-player-id='${formData.get('change_player_id')}'] img`);
+                    const playerElement = document.querySelector(.orbiting-element[data-player-id='${formData.get('change_player_id')}'] img);
                     if (playerElement) {
-                        playerElement.src = `../../uploads/${data.image}`;
+                        playerElement.src = ../../uploads/${data.image};
                     }
                 } else {
                     alert(data.message);
