@@ -2,6 +2,37 @@
 session_start();
 include '../../settings/connection.php';
 
+
+// Fetch tournaments and store them in an associative array
+$tournaments_sql = "SELECT * FROM tournaments";
+$tournaments_stmt = $conn->prepare($tournaments_sql);
+$tournaments_stmt->execute();
+$tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$tournament_names = [];
+foreach ($tournaments as $tournament) {
+    $tournament_names[$tournament['TournamentID']] = $tournament['Name'];
+}
+
+// Fetch matches (regardless of status) along with tournament names if available
+$sql = "SELECT m.MatchID, m.Date, m.Time, t1.TeamName as Team1Name, t2.TeamName as Team2Name, s.SportName, 
+               m.TournamentID
+        FROM matches m
+        JOIN teams t1 ON m.Team1ID = t1.TeamID
+        JOIN teams t2 ON m.Team2ID = t2.TeamID
+        JOIN sports s ON m.SportID = s.SportID
+        ORDER BY m.Date ASC";
+$stmt = $conn->prepare($sql);
+$stmt->execute();
+$matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch tournaments
+$tournaments_sql = "SELECT * FROM tournaments";
+$tournaments_stmt = $conn->prepare($tournaments_sql);
+$tournaments_stmt->execute();
+$tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
 // Fetch coach ID and team ID from session
 $is_coach = isset($_SESSION['coach_id']);
 $coach_team_id = $is_coach && isset($_SESSION['team_id']) ? $_SESSION['team_id'] : null;
@@ -39,8 +70,8 @@ if ($team_id) {
     }
 }
 
-// Check if the logged-in coach is associated with the team in the URL
-$can_edit = $is_coach && $coach_team_id == $team_id;
+// Check if the logged-in coach is associated with the team in the URL, and if so, make them a viewer
+$can_edit = $is_coach && $coach_team_id !== $team_id;
 
 // Fetch players for the team
 $players_sql = "SELECT * FROM players WHERE TeamID = ?";
@@ -53,18 +84,19 @@ $goalkeepers = array_filter($players, function($player) {
     return stripos($player['Position'], 'goalkeeper') !== false || stripos($player['Position'], 'keeper') !== false;
 });
 
-// Fetch upcoming matches for the specified team
-$sql = "SELECT m.MatchID, m.Date, m.Time, m.SportID, m.Team1ID, m.Team2ID, m.IsUpcoming, m.NotificationSent, m.Goalscorers, m.CleanSheets, m.Assists,
-               t1.TeamName as Team1Name, t2.TeamName as Team2Name, s.SportName
+$sql = "SELECT m.MatchID, m.Date, m.Time, m.SportID, m.Team1ID, m.Team2ID, m.TournamentID, 
+               t1.TeamName as Team1Name, t2.TeamName as Team2Name, s.SportName, 
+               tr.Name as TournamentName
         FROM matches m
         JOIN teams t1 ON m.Team1ID = t1.TeamID
         JOIN teams t2 ON m.Team2ID = t2.TeamID
         JOIN sports s ON m.SportID = s.SportID
-        WHERE m.IsUpcoming = TRUE
-        AND (m.Team1ID = ? OR m.Team2ID = ?)";
+        LEFT JOIN tournaments tr ON m.TournamentID = tr.TournamentID
+        WHERE m.IsUpcoming = TRUE";
 $stmt = $conn->prepare($sql);
-$stmt->execute([$team_id, $team_id]);
+$stmt->execute();
 $upcoming_matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 
 // Fetch past matches for the specified team
 $sql = "SELECT m.MatchID, m.Date, m.Time, m.SportID, m.Team1ID, m.Team2ID, m.HasEnded,
@@ -634,9 +666,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                        
                     </li>
                    
-                    <li><a href="homepage.php">HOME</a></li>
-                    
-            </nav>
+                    <li><a href="homepage.php">HOME</a></li>  
+                </nav>
+
             <div class="nav-icons">
                 <?php if (isset($_SESSION['coach_id'])): ?>
                     <?php if ($is_coach && $coach_team_id): ?>
@@ -661,19 +693,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         </div>
     </header>
     <div class="sidebar">
-    <div class="team-info">
-        <img src="<?php echo htmlspecialchars($team_logo); ?>" alt="Team Logo">
-        <h2><?php echo htmlspecialchars($team_name); ?></h2>
-    </div>
+        <div class="team-info">
+            <img src="<?php echo htmlspecialchars($team_logo); ?>" alt="Team Logo">
+            <h2><?php echo htmlspecialchars($team_name); ?></h2>
+        </div>
         <ul>
         <li><a href="footballclub.php?team_id=<?php echo htmlspecialchars($team_id); ?>"> Team Overview</a></li>
-            <li><a href="teamstories.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Stories</a></li>
-            <li><a href="teamstatistics.php?team_id=<?php echo htmlspecialchars($team['TeamID']); ?>">Team Stats</a></li>
+            <li><a href="team_stories.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Stories</a></li>
+            <li><a href="teamstatistics.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Stats</a></li>
             <li><a href="players.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Players</a></li>
-            <li><a href="upcoming_matches.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Matches</a></li>
-            <li><a href="competitions.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Competitions</a></li>
             <li><a href="awards.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Awards</a></li>
         </ul>
+
     </div>
     <div class="main-content">
     <section id="upcoming-matches" class="section">
@@ -723,26 +754,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
         <?php foreach ($upcoming_matches as $match): ?>
             <div class="upcoming-matches" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">
-                <div class="match-details">
+            <div class="match-details">
                     <h3><?php echo htmlspecialchars($match['Team1Name']) . ' vs ' . htmlspecialchars($match['Team2Name']); ?></h3>
                     <p>Date: <?php echo htmlspecialchars($match['Date']); ?></p>
                     <p>Time: <?php echo htmlspecialchars($match['Time']); ?> GMT</p>
                     <p>Sport: <?php echo htmlspecialchars($match['SportName']); ?></p>
-                    <?php if (!$can_edit): ?>
-                        <button>Notify Me</button>
-                    <?php else: ?>
-                        <?php if (strtotime($match['Date'] . ' ' . $match['Time']) <= time()): ?>
-                            <button class="update-details-button">Update Match Details</button>
-                            <button class="status-button" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">Status</button>
-                        <?php endif; ?>
-                        <button class="edit-button">Edit</button>
-                        <form action="upcoming_matches.php" method="post" class="delete-form">
-                            <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="match_id" value="<?php echo htmlspecialchars($match['MatchID']); ?>">
-                            <button type="submit">Delete</button>
-                        </form>
-                    <?php endif; ?>
-                </div>
+
+                   
+
+
+    <?php if (!$can_edit): ?>
+        <!-- <button>Notify Me</button> -->
+    <?php else: ?>
+        <?php if (strtotime($match['Date'] . ' ' . $match['Time']) <= time()): ?>
+            <button class="update-details-button">Update Match Details</button>
+            <button class="status-button" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">Status</button>
+        <?php endif; ?>
+        <button class="edit-button">Edit</button>
+        <form action="upcoming_matches.php" method="post" class="delete-form">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="match_id" value="<?php echo htmlspecialchars($match['MatchID']); ?>">
+            <button type="submit">Delete</button>
+        </form>
+    <?php endif; ?>
+</div>
+
                 <?php if ($can_edit): ?>
                     <div class="edit-form">
                         <form action="upcoming_matches.php" method="post">
@@ -803,11 +839,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <h2>Past Matches</h2>
             <?php foreach ($past_matches as $match): ?>
                 <div class="past-matches" data-match-id="<?php echo htmlspecialchars($match['MatchID']); ?>">
-                    <div class="match-details">
-                        <h3><?php echo htmlspecialchars($match['Team1Name']) . ' vs ' . htmlspecialchars($match['Team2Name']); ?></h3>
-                        <p>Date: <?php echo htmlspecialchars($match['Date']); ?></p>
-                        <p>Time: <?php echo htmlspecialchars($match['Time']); ?> GMT</p>
-                        <p>Sport: <?php echo htmlspecialchars($match['SportName']); ?></p>
+                <div class="match-details">
+                <h3><?php echo htmlspecialchars($match['Team1Name']) . ' vs ' . htmlspecialchars($match['Team2Name']); ?></h3>
+                <p>Date: <?php echo htmlspecialchars($match['Date']); ?></p>
+                <p>Time: <?php echo htmlspecialchars($match['Time']); ?> GMT</p>
+                <p>Sport: <?php echo htmlspecialchars($match['SportName']); ?></p>
+
+
+
                         <?php if ($can_edit): ?>
                             <form action="upcoming_matches.php" method="post" class="delete-form">
                                 <input type="hidden" name="action" value="delete">

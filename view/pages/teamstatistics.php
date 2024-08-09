@@ -10,9 +10,6 @@ error_reporting(E_ALL);
 // Get the team ID from the URL parameter
 $team_id = isset($_GET['team_id']) ? intval($_GET['team_id']) : null;
 
-// Check if the logged-in user is the coach of the team
-$is_coach = isset($_SESSION['coach_id']) && isset($_SESSION['team_id']) && $_SESSION['team_id'] == $team_id;
-
 // Fetch team details
 $team_info = [];
 if ($team_id) {
@@ -122,27 +119,13 @@ if ($team_id) {
 function getImagePath($image, $defaultImage) {
     return $image ? '../../uploads/' . $image : $defaultImage;
 }
-
-// Generate coaching tips based on the statistics
-$coaching_tips = [];
-if ($total_matches > 0) {
-    if ($metrics['total_goals'] / $total_matches < 1) {
-        $coaching_tips[] = "Focus on improving your team's offensive strategies. Consider additional training for your forwards.";
-    }
-
-    if ($metrics['total_clean_sheets'] / $total_matches < 0.3) {
-        $coaching_tips[] = "Work on defensive drills to help your team maintain clean sheets.";
-    }
-
-    // Add more tips based on other metrics and performance
-}
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><?php echo htmlspecialchars($team_info['TeamName']); ?> Statistics - Ashesi Sports Insight</title>
+    <title>Team Statistics - Ashesi Sports Insight</title>
     <link rel="stylesheet" href="styles.css">
     <style>
         /* Styles for the navbar and sidebar (unchanged) */
@@ -156,65 +139,65 @@ if ($total_matches > 0) {
             min-height: 100vh;
         }
 
-        .header-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: white;
-            padding: 5px 10px;
-            height: 80px;
-            border-radius: 1px;
-            z-index: 1000;
-            width: 100%;
-            box-sizing: border-box;
-        }
+       .header-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: white;
+    padding: 5px 10px;
+    height: 80px;
+    border-radius: 1px;
+    z-index: 1000;
+    width: 100%;
+    box-sizing: border-box;
+}
 
-        .dropdown {
-            position: relative;
-            display: inline-block;
-        }
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
 
-        .dropbtn {
-            background-color: #4B0000;
-            color: white;
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-        }
+.dropbtn {
+    background-color: #4B0000;
+    color: white;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
 
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: white;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
-            z-index: 1;
-        }
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+    z-index: 1;
+}
 
-        .dropdown-content a {
-            color: black;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-        }
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
 
-        .dropdown-content a:hover {
-            background-color: #ddd;
-        }
+.dropdown-content a:hover {
+    background-color: #ddd;
+}
 
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
+.dropdown:hover .dropdown-content {
+    display: block;
+}
 
-        .dropdown:hover .dropbtn {
-            background-color: #3e8e41;
-        }
+.dropdown:hover .dropbtn {
+    background-color: #3e8e41;
+}
 
         .logo-container {
             height: 100%;
@@ -399,21 +382,21 @@ if ($total_matches > 0) {
         }
 
         footer {
-            background-color: #4B0000;
-            color: white;
-            text-align: center;
-            padding: 10px 0;
-            border-radius: 5px;
-            position: static;
-            bottom: 0;
-            width: 100%;
-        }
+    background-color: #4B0000;
+    color: white;
+    text-align: center;
+    padding: 10px 0;
+    border-radius: 5px;
+    position: static;
+    bottom: 0;
+    width: 100%;
+}
 
-        .footer-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 10px;
-        }
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px;
+}
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -424,12 +407,7 @@ if ($total_matches > 0) {
                 <img src="https://rawcdn.githack.com/naomikonlack/WEBTECHGITDEMO/246c29d2a7c8bff15a8f6206d9f7084c6018fa5a/Untitled_Artwork%204.png" alt="Ashesi Sports Insight Logo" class="logo">
                 <div class="site-title">Ashesi Sports Insight</div>
             </div>
-            <nav>
-                <ul>
-                    <li><a style="margin-left: 820px;" href="footballsport.php">Go Back To View All Clubs</a></li>
-                    <li><a href="homepage.php">HOME</a></li>
-                </ul>
-            </nav>
+            
             <div class="nav-icons">
                 <?php if (isset($_SESSION['coach_id'])): ?>
                     <div class="dropdown">
@@ -451,16 +429,15 @@ if ($total_matches > 0) {
         </div>
         <ul>
             <li><a href="footballclub.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Overview</a></li>
-            <li><a href="teamstories.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Stories</a></li>
+            <li><a href="team_stories.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Team Stories</a></li>
             <li><a href="players.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Players</a></li>
             <li><a href="upcoming_matches.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Matches</a></li>
-            <li><a href="competitions.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Upcoming Competitions</a></li>
             <li><a href="awards.php?team_id=<?php echo htmlspecialchars($team_id); ?>">Awards</a></li>
         </ul>
     </div>
     <div class="main-content">
         <section id="team-stats" class="section">
-            <h2><?php echo htmlspecialchars($team_info['TeamName']); ?> Statistics</h2>
+        <h2><?php echo htmlspecialchars($team_info['TeamName']); ?> Statistics</h2>
             <div class="card">
                 <h3>General Performance Metrics</h3>
                 <p>Total Matches: <?php echo htmlspecialchars($total_matches); ?></p>
@@ -498,14 +475,6 @@ if ($total_matches > 0) {
                     <canvas id="topAssistersChart"></canvas>
                 </div>
             </div>
-            <?php if ($is_coach && !empty($coaching_tips)): ?>
-                <div class="card">
-                    <h3>Coaching Tips</h3>
-                    <?php foreach ($coaching_tips as $tip): ?>
-                        <p><?php echo htmlspecialchars($tip); ?></p>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
         </section>
     </div>
 
@@ -543,7 +512,7 @@ if ($total_matches > 0) {
             datasets: [{
                 label: 'Recent Form',
                 data: <?php echo json_encode(array_column($recent_matches, 'result')); ?>,
-                backgroundColor: '#36A2EB',
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'],
                 borderWidth: 1
             }]
         };
@@ -565,7 +534,7 @@ if ($total_matches > 0) {
             datasets: [{
                 label: 'Top Scorers',
                 data: <?php echo json_encode(array_column($top_scorers, 'goals')); ?>,
-                backgroundColor: '#FF6384',
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'],
                 borderWidth: 1
             }]
         };
@@ -587,7 +556,7 @@ if ($total_matches > 0) {
             datasets: [{
                 label: 'Top Assisters',
                 data: <?php echo json_encode(array_column($top_assisters, 'assists')); ?>,
-                backgroundColor: '#FFCE56',
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'],
                 borderWidth: 1
             }]
         };
