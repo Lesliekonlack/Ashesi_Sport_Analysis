@@ -10,7 +10,7 @@ $tournaments_stmt->execute();
 $tournaments = $tournaments_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
-include 'settings/connection.php';
+include '../../settings/connection.php';
 
 // Fetch upcoming matches
 $sql = "SELECT m.MatchID, m.Date, m.Time, m.SportID, m.Team1ID, m.Team2ID, m.TournamentID, 
