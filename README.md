@@ -80,33 +80,6 @@
 - *Edit Team Info*: If logged in as a coach, you can edit team and player details directly from the team overview page.
 - *Manage Players*: Add new players, edit existing players, or remove players as necessary.
 
-## Project Structure
-
-
-/Ashesi-Sports-Insight/
-│
-├── /action/                  # Handles various form submissions and actions (e.g., logout).
-├── /assets/                  # Contains images, CSS, JS files.
-│   ├── /css/                 # CSS stylesheets.
-│   ├── /js/                  # JavaScript files.
-│   └── /images/              # Image files.
-│
-├── /database/                # Contains SQL dump file for database setup.
-│   └── ashesi_sports_insight.sql
-│
-├── /settings/                # Configuration files.
-│   ├── connection.php        # Database connection setup.
-│
-├── /uploads/                 # Directory for uploaded images (team photos, player images, etc.).
-│
-├── /view/                    # Contains the main view pages.
-│   ├── /pages/               # Individual page files.
-│   ├── footer.php            # Footer component.
-│   └── header.php            # Header and navigation component.
-│
-├── index.php                 # Entry point for the web application.
-└── README.md                 # Project documentation.
-
 
 ## Contributing
 
