@@ -74,10 +74,9 @@
 
 ## Usage
 
-- *Coach Login*: Navigate to the login page, enter your credentials to access team management features.
-- *View Teams*: On the homepage, select a team to view its details, stories, players, and more.
-- *Edit Team Info*: If logged in as a coach, you can edit team and player details directly from the team overview page.
-- *Manage Players*: Add new players, edit existing players, or remove players as necessary.
+- *Team Admin*: Navigate to the login page by clicking on the user icon close to the search icon on the far left end of the page, enter your credentials to access team management features.  email: King@ashesi.edu.gh   password: password123
+- *Normal Football enthusiasts do not need to login you can go ahead and view any information on the page
+- Administrators need to register to update page content—login using these details email:afa@ashesi.edu.gh password: password123
 
 
 ## Contributing
