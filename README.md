@@ -15,12 +15,18 @@
 - *Upcoming Matches*: Displays a schedule of upcoming matches for the team.
 - *Responsive Design*: The website is designed to be responsive and accessible across various devices.
 
-### Coach-Specific Features
+### Team Admin-Specific Features
 - *Login and Authentication*: Coaches can log in to the system, ensuring that only authorized personnel can modify team data.
 - *Edit Team Profile*: Coaches can upload or remove the team photo and update the coach's photo.
 - *Edit Player Details*: Coaches can update player information directly from the interface.
 - *Add/Remove Players*: Easily manage the team roster by adding new players or removing existing ones.
 - *Change Player Picture*: Coaches can change player pictures via a simple form.
+
+  ### Footbal association Admin-Specific Features
+- *Login and Authentication*: Admins can log in to the system, ensuring that only authorized personnel can modify website data.
+- *Schedule and update matches*: Admins can schedule matches, edit,delete and update match details. as well as provide live updates.
+- *publicise events,tournaments, share stories*: Admins can update the website with new information.
+
 
 ### Technical Features
 - *Database Management*: The system is built on a robust relational database to manage teams, players, matches, stories, and trophies.
