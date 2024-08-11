@@ -1,4 +1,3 @@
----
 
 # Ashesi Sports Management System
 
@@ -88,7 +87,3 @@ Contributions are welcome! Please fork the repository and create a pull request 
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
-
----
-
-*Ashesi Sports Insight* provides an engaging platform for managing and showcasing sports teams, offering comprehensive features for both viewers and team managers alike. Enjoy using the platform, and feel free to contribute to its development!
